@@ -19,10 +19,22 @@ public class Main {
             e.printStackTrace();
         }*/
 
-        Source s = new Source("/Users/JakubPawlak/OneDrive/STUDNIA/Semestr 6/TKOM/Projekt/Etap 1/index.html");
+        Source s = new Source("/Users/JakubPawlak/IdeaProjects/TKOM/src/index.html");
         Lexer l = new Lexer(s);
+
         s.open();
-        l.nextSymbol();
+
+        try {
+            do {
+                System.out.println(l.nextSymbol());
+            } while (System.in.read() != 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+
+
+
 
     }
 }
