@@ -2,12 +2,16 @@ public enum Symbol {
     attrributeAssing,
     attributeName,
     attributeValue,
-    beginStarttag,
+    beginStartTag,
     beginEndTag,
     beginComment,
     tagName,
     finishTag,
     finishComment,
     data,
-    beginDoctype;
+    beginDoctype,
+    other,
+    singleQuote,
+    doubleQuote,
+    EOI;
 }
