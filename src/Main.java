@@ -5,7 +5,7 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        System.out.println("Hello World!\n  ");
 
 
         try (FileReader reader = new FileReader("/Users/JakubPawlak/OneDrive/STUDNIA/Semestr 6/TKOM/Projekt/Etap 1/index.html")) {
