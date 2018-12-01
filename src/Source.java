@@ -32,5 +32,23 @@ public class Source implements ISource{
 
     }
 
+    public void mark() {
+        try {
+            reader.mark(1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void back() {
+        try {
+            reader.reset();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 
 }
