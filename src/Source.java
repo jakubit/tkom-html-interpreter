@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Source implements ISource{
 
@@ -13,13 +14,11 @@ public class Source implements ISource{
     }
 
     @Override
-    public int open() {
+    public void open() {
         try {
             reader = new BufferedReader(new FileReader(fileName));
-            return 0;
         } catch (IOException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
