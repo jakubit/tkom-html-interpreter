@@ -1,7 +1,8 @@
 import java.io.IOException;
 
 public interface ISource {
-    char nextChar() throws IOException;
+    char nextChar();
+    char getCurrentChar();
     void open();
     void error();
 }
