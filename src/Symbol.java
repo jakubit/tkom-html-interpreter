@@ -17,7 +17,8 @@ public class Symbol {
         singleQuote,
         doubleQuote,
         alphabetic,
-        EOI;
+        numeric,
+        EOF;
     }
 
     private SymbolType type;
