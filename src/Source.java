@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Optional;
@@ -27,11 +28,14 @@ public class Source implements ISource{
     public char nextChar() {
         try {
             currentChar = (char)reader.read();
+            if(currentChar == '\uFFFF')
+                throw new EOFException();
             return currentChar;
+        } catch (EOFException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Zjebane nextChar w Source!");
         return currentChar;
     }
 
