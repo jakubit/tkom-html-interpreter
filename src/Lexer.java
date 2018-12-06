@@ -11,6 +11,15 @@ public class Lexer implements ILexer {
     }
 
     public Symbol nextSymbol() {
+        /*
+        * TODO
+        * Refactor:
+        * despaghettize
+        * improve cooperation with Source
+        * try to get rid of get/unget char
+        * breakup to smaller functions
+        * */
+
         // 1. Przesun znak w Source
         source.nextChar();
 
@@ -30,6 +39,7 @@ public class Lexer implements ILexer {
         else if(source.getCurrentChar() == '>')
             return new Symbol(Symbol.SymbolType.finishTag, ">");
         else if(source.getCurrentChar() == '-') {
+            source.mark();
             source.nextChar();
             if(source.getCurrentChar() == '-') {
                 source.mark();
@@ -38,18 +48,39 @@ public class Lexer implements ILexer {
                     return new Symbol(Symbol.SymbolType.finishComment, "-->");
                 else {
                     source.back();
-                    return new Symbol(Symbol.SymbolType.alphabetic, "--");
+                    return new Symbol(Symbol.SymbolType.data, "--");
                 }
+            } else {
+                source.back();
+                return new Symbol(Symbol.SymbolType.data, "-");
             }
         } else if(source.getCurrentChar() == '\"') {
             return new Symbol(Symbol.SymbolType.doubleQuote, "\"");
         } else if(source.getCurrentChar() == '\'') {
             return new Symbol(Symbol.SymbolType.singleQuote, "\'");
         } else if(Character.isLetter(source.getCurrentChar())) {
-            return new Symbol(Symbol.SymbolType.alphabetic, String.valueOf(source.getCurrentChar()));
+            StringBuilder value = new StringBuilder("");
+            while (Character.isLetter(source.getCurrentChar())) {
+                source.mark();
+                value.append(String.valueOf(source.getCurrentChar()));
+                source.nextChar();
+            }
+            source.back();
+            return new Symbol(Symbol.SymbolType.alphabetic, value.toString());
+        } else if(Character.isDigit(source.getCurrentChar())) {
+            StringBuilder value = new StringBuilder("");
+            while (Character.isDigit(source.getCurrentChar())) {
+                source.mark();
+                value.append(String.valueOf(source.getCurrentChar()));
+                source.nextChar();
+            }
+            source.back();
+            return new Symbol(Symbol.SymbolType.numeric, value.toString());
+        } else if(source.getCurrentChar() == '\uFFFF') {
+            return new Symbol(Symbol.SymbolType.EOF, "EOF");
         }
 
-        return new Symbol(Symbol.SymbolType.EOI, "EOI");
+        return new Symbol(Symbol.SymbolType.other, String.valueOf(source.getCurrentChar()));
     }
 
     private Symbol openingTags() {
