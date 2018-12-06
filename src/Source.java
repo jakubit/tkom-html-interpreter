@@ -28,11 +28,6 @@ public class Source implements ISource{
     public char nextChar() {
         try {
             currentChar = (char)reader.read();
-            if(currentChar == '\uFFFF')
-                throw new EOFException();
-            return currentChar;
-        } catch (EOFException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
