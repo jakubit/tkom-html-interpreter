@@ -24,14 +24,13 @@ public class Main {
 
         s.open();
 
-        try {
-            do {
-                System.out.println(l.nextSymbol());
-            } while (System.in.read() != 0);
-        } catch (IOException e) {
-            e.printStackTrace();
+        Symbol symbol;
 
-        }
+            do {
+                symbol = l.nextSymbol();
+                System.out.println(symbol);
+            } while (symbol.getType() != Symbol.SymbolType.EOF);
+
 
 
 
