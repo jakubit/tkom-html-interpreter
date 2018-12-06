@@ -7,6 +7,7 @@ public class Source implements ISource{
 
     private final String fileName;
     private BufferedReader reader;
+    private char currentChar;
 
 
     public Source(String fileName) {
@@ -24,7 +25,12 @@ public class Source implements ISource{
 
     @Override
     public char nextChar() throws IOException {
-        return (char) reader.read();
+        currentChar = (char) reader.read();
+        return currentChar;
+    }
+    
+    public char getCurrentChar() {
+        return currentChar;
     }
 
     @Override
