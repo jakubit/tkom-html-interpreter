@@ -28,7 +28,7 @@ public class Source implements ISource{
         currentChar = (char) reader.read();
         return currentChar;
     }
-    
+
     public char getCurrentChar() {
         return currentChar;
     }

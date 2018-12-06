@@ -8,7 +8,6 @@ public class Lexer implements ILexer {
 
     public Lexer(Source source) {
         this.source = source;
-        currentSymbol = Symbol.EOI;
     }
 
     public Symbol nextSymbol() {
@@ -20,87 +19,49 @@ public class Lexer implements ILexer {
 
         // 2. Sprawdzaj
         if(currentChar == '<') {
-            // 2.1 Otwarcie
-            // 4 mozliwosci: <, <!, <!--, </
+            currentSymbol = processOpeningTags();
+        } else if(currentChar == '=') {
+            currentSymbol = new Symbol(Symbol.SymbolType.attrributeAssing, "=");
+        } else if(currentChar == '>') {
+            currentSymbol = new Symbol(Symbol.SymbolType.finishTag, ">");
+        } else if(currentChar == '-') {
+            if(currentChar == '-') {
+                source.mark();
+                nextChar();
+                if(currentChar == '>')
+                    return new Symbol(Symbol.SymbolType.finishComment, "-->");
+                else 
+
+            }
+        } else
+            return new Symbol(Symbol.SymbolType.alphabetic, String.valueOf(currentChar));
+
+        return currentSymbol;
+    }
+
+    private Symbol processOpeningTags() {
+        if(currentChar == '<') {
             nextChar();
             if(currentChar == '!') {
                 nextChar();
                 if(currentChar == '-') {
                     nextChar();
                     if(currentChar == '-')
-                        currentSymbol = Symbol.beginComment;
+                        return new Symbol(Symbol.SymbolType.beginComment, "<!--");
                     else
-                        currentSymbol = Symbol.other;
-                } else
-                    currentSymbol = Symbol.beginDoctype;
-            } else if(currentChar == '/')
-                currentSymbol = Symbol.beginEndTag;
-            else
-                currentSymbol = Symbol.beginStartTag;
-        } else if(currentChar == '=')
-            currentSymbol = Symbol.attrributeAssing;
-        else if(currentChar == '>')
-            currentSymbol = Symbol.finishTag;
-        else if(currentChar == '-') {
-            nextChar();
-            if(currentChar == '-') {
-                nextChar();
-                if(currentChar == '>')
-                    currentSymbol = Symbol.finishComment;
+                        return new Symbol(Symbol.SymbolType.other, "<!-?");
+                }
+                return new Symbol(Symbol.SymbolType.beginDoctype, "<!");
+            } else if(currentChar == '/') {
+                return new Symbol(Symbol.SymbolType.beginEndTag, "</");
+            } else {
+                return new Symbol(Symbol.SymbolType.beginStartTag, "<");
             }
-        } else if(Character.isAlphabetic(currentChar)) {
-            // nazwa atrybutu, wartosc atrybutu, komentarz, doctype, tekst
-            if(currentSymbol == Symbol.beginStartTag || currentSymbol == Symbol.beginEndTag) {
-                // nazwa tagu
-                while(Character.isAlphabetic(currentChar) || Character.isDigit(currentChar)) {
-                    source.mark();
-                    nextChar();
-                }
-                source.back();
-                currentSymbol = Symbol.tagName;
-            } else if(currentSymbol == Symbol.beginComment) {
-                // komentarz
-                while(currentChar != '-') {
-                    source.mark();
-                    nextChar();
-                }
-                source.back();
-                currentSymbol = Symbol.data;
-            } else if(currentSymbol == Symbol.beginDoctype) {
-                // doctype
-                while(currentChar != '>') {
-                    source.mark();
-                    nextChar();
-                }
-                source.back();
-                currentSymbol = Symbol.data;
-            } else if(currentSymbol == Symbol.tagName || currentSymbol == Symbol.attributeValue) {
-                // nazwa atrybutu
-                while(!Character.isWhitespace(currentChar) && currentChar != '=') {
-                    source.mark();
-                    nextChar();
-                }
-                source.back();
-                currentSymbol = Symbol.attributeName;
-            } else if(currentSymbol == Symbol.attrributeAssing) {
-                while (!Character.isWhitespace(currentChar)) {
-                    source.mark();
-                    nextChar();
-                }
-                source.back();
-                currentSymbol = Symbol.attributeValue;
-            }
-        } else if(Character.isDigit(currentChar)) {
-            while (!Character.isWhitespace(currentChar)) {
-                source.mark();
-                nextChar();
-            }
-            source.back();
-            currentSymbol = Symbol.data;
         }
 
-        return currentSymbol;
+        return new Symbol(Symbol.SymbolType.other, "other");
     }
+
 
     private void nextChar() {
         try {
