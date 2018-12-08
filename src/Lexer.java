@@ -1,5 +1,3 @@
-import java.io.IOException;
-
 public class Lexer implements ILexer {
 
     private Source source;
@@ -48,11 +46,20 @@ public class Lexer implements ILexer {
                     return new Symbol(Symbol.SymbolType.finishComment, "-->");
                 else {
                     source.back();
-                    return new Symbol(Symbol.SymbolType.data, "--");
+                    return new Symbol(Symbol.SymbolType.other, "--");
                 }
             } else {
                 source.back();
-                return new Symbol(Symbol.SymbolType.data, "-");
+                return new Symbol(Symbol.SymbolType.other, "-");
+            }
+        } else if(source.getCurrentChar() == '/') {
+            source.mark();
+            source.nextChar();
+            if(source.getCurrentChar() == '>')
+                return new Symbol(Symbol.SymbolType.finishSelfClosingTag, "/>");
+            else {
+                source.back();
+                return new Symbol(Symbol.SymbolType.other, "/");
             }
         } else if(source.getCurrentChar() == '\"') {
             return new Symbol(Symbol.SymbolType.doubleQuote, "\"");
