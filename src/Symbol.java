@@ -10,6 +10,7 @@ public class Symbol {
         beginComment,
         tagName,
         finishTag,
+        finishSelfClosingTag,
         finishComment,
         data,
         beginDoctype,
