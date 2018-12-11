@@ -9,10 +9,12 @@ public class Source implements ISource{
     private final String fileName;
     private BufferedReader reader;
     private char currentChar;
+    private TextPosition textPosition;
 
 
     public Source(String fileName) {
         this.fileName = fileName;
+        textPosition = new TextPosition();
     }
 
     @Override
@@ -28,6 +30,14 @@ public class Source implements ISource{
     public char nextChar() {
         try {
             currentChar = (char)reader.read();
+            if(currentChar == '\n') {
+                // New line
+                textPosition.incrementLineIndex();
+                textPosition.setCurrentCharIndex(0);
+            } else {
+                // Same line
+                textPosition.incrementCharIndex();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,13 +64,29 @@ public class Source implements ISource{
 
     public void back() {
         try {
+            if(currentChar == '\n') {
+                // Previous line
+                textPosition.decrementLineIndex();
+                textPosition.decrementCharIndex();
+            } else {
+                // Same line
+                textPosition.decrementCharIndex();
+            }
             reader.reset();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public long getLineIndex() {
+        return textPosition.getCurrentLineIndex();
+    }
 
+    public long getCharIndex() {
+        return textPosition.getCurrentCharIndex();
+    }
 
-
+    public TextPosition getTextPosition() {
+        return textPosition;
+    }
 }

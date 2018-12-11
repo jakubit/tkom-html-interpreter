@@ -16,7 +16,7 @@ public class Symbol {
         beginDoctype,
         other,
         singleQuote,
-        doubleQuote,
+        doubleQuoted,
         alphabetic,
         numeric,
         EOF;
@@ -24,10 +24,12 @@ public class Symbol {
 
     private SymbolType type;
     private String value;
+    private TextPosition position;
 
-    public Symbol(SymbolType type, String value) {
+    public Symbol(SymbolType type, String value, TextPosition position) {
         this.type = type;
         this.value = value;
+        this.position = position;
     }
 
     public SymbolType getType() {
@@ -40,7 +42,7 @@ public class Symbol {
 
     @Override
     public String toString() {
-        return type + "\t" + value;
+        return type + "\t" + value + "\t" + position;
     }
 
 }
