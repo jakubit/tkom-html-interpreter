@@ -13,13 +13,14 @@ public class Symbol {
         finishSelfClosingTag,
         finishComment,
         data,
+        specialChar,
         beginDoctype,
         other,
         singleQuote,
-        doubleQuoted,
-        alphabetic,
+        doubleQuote,
+        name,
         numeric,
-        EOF;
+        EOF
     }
 
     private SymbolType type;
@@ -34,10 +35,6 @@ public class Symbol {
 
     public SymbolType getType() {
         return type;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     @Override

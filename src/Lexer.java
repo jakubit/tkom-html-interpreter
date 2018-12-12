@@ -21,7 +21,7 @@ public class Lexer implements ILexer {
         /*
         * TODO
         * Po konsultacji z Gawkowskim:
-        * 1. Pamietac poczatek tokenu w tekscie/pliku
+        * 1. Pamietac poczatek tokenu w tekscie/pliku DONE
         * 2. Nie rozbijac tokenow: h1 -> name, a nie alphabets numeric
         * 3. Sprobowac ogarnac to: attr = "value 123" zeby "value 123" -> doubleQuoted
         * */
@@ -73,18 +73,18 @@ public class Lexer implements ILexer {
                 return new Symbol(Symbol.SymbolType.other, "/", textPosition);
             }
         } else if(source.getCurrentChar() == '\"') {
-            return new Symbol(Symbol.SymbolType.doubleQuoted, "\"", textPosition);
+            return new Symbol(Symbol.SymbolType.doubleQuote, "\"", textPosition);
         } else if(source.getCurrentChar() == '\'') {
             return new Symbol(Symbol.SymbolType.singleQuote, "\'", textPosition);
         } else if(Character.isLetter(source.getCurrentChar())) {
             StringBuilder value = new StringBuilder("");
-            while (Character.isLetter(source.getCurrentChar())) {
+            while (Character.isLetterOrDigit(source.getCurrentChar())) {
                 source.mark();
                 value.append(String.valueOf(source.getCurrentChar()));
                 source.nextChar();
             }
             source.back();
-            return new Symbol(Symbol.SymbolType.alphabetic, value.toString(), textPosition);
+            return new Symbol(Symbol.SymbolType.name, value.toString(), textPosition);
         } else if(Character.isDigit(source.getCurrentChar())) {
             StringBuilder value = new StringBuilder("");
             while (Character.isDigit(source.getCurrentChar())) {
@@ -94,7 +94,19 @@ public class Lexer implements ILexer {
             }
             source.back();
             return new Symbol(Symbol.SymbolType.numeric, value.toString(), textPosition);
-        } else if(source.getCurrentChar() == '\uFFFF') {
+        } else if(source.getCurrentChar() == '&') {
+            StringBuilder value = new StringBuilder("&");
+            source.mark();
+            source.nextChar();
+            while(Character.isLetterOrDigit(source.getCurrentChar()) || source.getCurrentChar() == '#') {
+                source.mark();
+                value.append(String.valueOf(source.getCurrentChar()));
+                source.nextChar();
+            }
+            source.back();
+            return new Symbol(Symbol.SymbolType.specialChar, value.toString(), textPosition);
+        }
+        else if(source.getCurrentChar() == '\uFFFF') {
             return new Symbol(Symbol.SymbolType.EOF, "EOF", textPosition);
         }
 
