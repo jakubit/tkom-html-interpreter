@@ -56,19 +56,16 @@ public class Lexer implements ILexer {
             return new Symbol(Symbol.SymbolType.singleQuote, "\'", textPosition);
 
         // Alphanumeric names starting with letter
-        if(Character.isLetter(source.getCurrentChar())) {
+        if(Character.isLetter(source.getCurrentChar()))
             return lettersAndDigits(textPosition);
-        }
 
         // Numbers
-        if(Character.isDigit(source.getCurrentChar())) {
+        if(Character.isDigit(source.getCurrentChar()))
             return digits(textPosition);
-        }
 
         // Special Characters
-        if(source.getCurrentChar() == '&') {
+        if(source.getCurrentChar() == '&')
             return specialSymbol(textPosition);
-        }
 
         // EOF
         if(source.getCurrentChar() == '\uFFFF')
@@ -99,12 +96,12 @@ public class Lexer implements ILexer {
                 return new Symbol(Symbol.SymbolType.beginDoctype, "<!", textPosition);
             }
         }
-        else if(source.getCurrentChar() == '/')
+
+        if(source.getCurrentChar() == '/')
             return new Symbol(Symbol.SymbolType.beginEndTag, "</", textPosition);
-        else {
-            source.back();
-            return new Symbol(Symbol.SymbolType.beginStartTag, "<", textPosition);
-        }
+
+        source.back();
+        return new Symbol(Symbol.SymbolType.beginStartTag, "<", textPosition);
     }
 
     private Symbol specialSymbol(TextPosition textPosition) {
@@ -170,5 +167,4 @@ public class Lexer implements ILexer {
         source.back();
         return new Symbol(Symbol.SymbolType.data, value.toString(), textPosition);
     }
-
 }
