@@ -1,14 +1,10 @@
-
 public class Symbol {
 
     public enum SymbolType {
         attrributeAssing,
-        attributeName,
-        attributeValue,
         beginStartTag,
         beginEndTag,
         beginComment,
-        tagName,
         finishTag,
         finishSelfClosingTag,
         finishComment,
@@ -18,7 +14,6 @@ public class Symbol {
         other,
         singleQuote,
         doubleQuote,
-        name,
         numeric,
         EOF
     }
