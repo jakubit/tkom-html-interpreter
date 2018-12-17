@@ -37,6 +37,14 @@ public class Symbol {
         return type;
     }
 
+    public String getValue() {
+        return value;
+    }
+
+    public TextPosition getPosition() {
+        return position;
+    }
+
     @Override
     public String toString() {
         return type + "\t" + value + "\t" + position;

@@ -213,6 +213,7 @@ public class Lexer implements ILexer {
         }
     }
 
+
     private Symbol lettersAndDigits(TextPosition textPosition) {
         StringBuilder value = new StringBuilder("");
         while (Character.isLetterOrDigit(source.getCurrentChar())) {
