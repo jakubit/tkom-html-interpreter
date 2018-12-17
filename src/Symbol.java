@@ -15,6 +15,7 @@ public class Symbol {
         singleQuote,
         doubleQuote,
         numeric,
+        error,
         EOF
     }
 
