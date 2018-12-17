@@ -1,3 +1,5 @@
+package tkom.source;
+
 public class TextPosition {
 
     private long currentLineIndex;

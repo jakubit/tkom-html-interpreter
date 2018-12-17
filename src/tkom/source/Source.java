@@ -1,10 +1,9 @@
+package tkom.source;
 import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Optional;
 
-public class Source implements ISource{
+public class Source implements ISource {
 
     private final String fileName;
     private BufferedReader reader;

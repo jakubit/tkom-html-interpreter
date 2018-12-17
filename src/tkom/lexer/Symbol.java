@@ -1,3 +1,7 @@
+package tkom.lexer;
+
+import tkom.source.TextPosition;
+
 public class Symbol {
 
     public enum SymbolType {

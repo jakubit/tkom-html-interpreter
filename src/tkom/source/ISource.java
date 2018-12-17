@@ -1,4 +1,4 @@
-import java.io.IOException;
+package tkom.source;
 
 public interface ISource {
     char nextChar();

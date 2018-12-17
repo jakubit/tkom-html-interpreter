@@ -1,3 +1,8 @@
+package tkom.lexer;
+
+import tkom.source.TextPosition;
+import tkom.source.Source;
+
 public class Lexer implements ILexer {
 
     private Source source;
