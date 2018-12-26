@@ -6,6 +6,7 @@ import tkom.source.Source;
 public class Lexer implements ILexer {
 
     private Source source;
+    private static final int MAX_LENGTH = 30;
 
     public Lexer(Source source) {
         this.source = source;
@@ -17,17 +18,18 @@ public class Lexer implements ILexer {
     public Symbol nextSymbol() {
         /*
         * TODO
-        * 1. Pamietac poczatek tokenu w tekscie/pliku DONE
-        * 2. Nie rozbijac tokenow: h1 -> name, a nie alphabets numeric DONE
-        * 3. Sprobowac ogarnac to: attr = "value 123" zeby "value 123" -> doubleQuoted
+        * 1. Ogarnac max value zeby rzucalo jakims wyjatkiem czy cos
+        * 2. Ogarnac token error - chyba trzeba zamienic to na rzucanie wyjatkiem i lapanie w parserze
+        * 3. Ogarnac lexer - nie moze rozbijac nazw...
         * */
 
 
         /*
          * TODO
-         * 1. POZBYC SIE GET/UNGET CHAR POPRZEZ PRZESUWANIE ZNAKU DOPIERO PO ROZPOZNANIU TOKENU
-         * 2. TOKEN NA ERRORY
+         * 1. POZBYC SIE GET/UNGET CHAR POPRZEZ PRZESUWANIE ZNAKU DOPIERO PO ROZPOZNANIU TOKENU  done
+         * 2. TOKEN NA ERRORY done
          * 3. AUTOMAT DLA --> W KOMENTARZU
+         * 4. komentarze
          */
 
         // 1. Shift source to next char
@@ -146,14 +148,37 @@ public class Lexer implements ILexer {
     }
 
     private Symbol specialSymbol(TextPosition textPosition) {
-        // TODO: PODMIENIAC OD RAZU NA WARTOSCI
+        // TODO: PODMIENIAC OD RAZU NA WARTOSCI ASCII
+        /*
+        jesli jest &#[numer] to value = numer
+        jesli jest &name to value = map.get(name)
+         */
+
         StringBuilder value = new StringBuilder("&");
-        //source.mark();
         source.nextChar();
-        while(Character.isLetterOrDigit(source.getCurrentChar()) || source.getCurrentChar() == '#') {
+
+        /*
+        int asciiCode;
+        if(source.getCurrentChar() == '#') {
+            // &#number
+            while(Character.isDigit(source.getCurrentChar())) {
+                value.append(String.valueOf(source.getCurrentChar()));
+            }
+            asciiCode = Integer.valueOf(value.toString());
+        } else if(Character.isLetter(source.getCurrentChar())) {
+            // &name
+            while(Character.isLetterOrDigit(source.getCurrentChar())) {
+                value.append(String.valueOf(source.getCurrentChar()));
+            }
+
+        }*/
+
+        int length = 0;
+        while(length < MAX_LENGTH && Character.isLetterOrDigit(source.getCurrentChar()) || source.getCurrentChar() == '#') {
             //source.mark();
             value.append(String.valueOf(source.getCurrentChar()));
             source.nextChar();
+            length++;
         }
         //source.back();
         Symbol symbol = new Symbol(Symbol.SymbolType.specialChar, value.toString(), textPosition);
@@ -179,10 +204,12 @@ public class Lexer implements ILexer {
     private Symbol digits(TextPosition textPosition) {
         // TODO: ROBIC OD RAZU INTIGER
         StringBuilder value = new StringBuilder("");
-        while (Character.isDigit(source.getCurrentChar())) {
+        int length = 0;
+        while (length < MAX_LENGTH && Character.isDigit(source.getCurrentChar())) {
             //source.mark();
             value.append(String.valueOf(source.getCurrentChar()));
             source.nextChar();
+            length++;
         }
         //source.back();
         return new Symbol(Symbol.SymbolType.numeric, value.toString(), textPosition);
@@ -202,7 +229,7 @@ public class Lexer implements ILexer {
             } else {
                 //source.back();
                 Symbol symbol = new Symbol(Symbol.SymbolType.other, "--", textPosition);
-                source.nextChar();
+                //source.nextChar();
                 return symbol;
             }
         } else {
@@ -216,12 +243,25 @@ public class Lexer implements ILexer {
 
     private Symbol lettersAndDigits(TextPosition textPosition) {
         StringBuilder value = new StringBuilder("");
-        while (Character.isLetterOrDigit(source.getCurrentChar())) {
+        int length = 0;
+        while (length < MAX_LENGTH && !Character.isWhitespace(source.getCurrentChar()) && characterAllowedInName(source.getCurrentChar())) {
             //source.mark();
             value.append(String.valueOf(source.getCurrentChar()));
             source.nextChar();
+            length++;
         }
         //source.back();
         return new Symbol(Symbol.SymbolType.data, value.toString(), textPosition);
+    }
+
+    private boolean characterAllowedInName(char c) {
+        switch (c) {
+            case '=':
+            case '/':
+            case '>':
+            case '&': return false;
+        }
+
+        return true;
     }
 }
