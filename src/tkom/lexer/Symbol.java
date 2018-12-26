@@ -5,22 +5,22 @@ import tkom.source.TextPosition;
 public class Symbol {
 
     public enum SymbolType {
-        attrributeAssing,
-        beginStartTag,
-        beginEndTag,
-        beginComment,
-        finishTag,
-        finishSelfClosingTag,
-        finishComment,
-        data,
-        specialChar,
-        beginDoctype,
-        other,
-        singleQuote,
-        doubleQuote,
-        numeric,
-        error,
-        EOF
+        attrributeAssing,       // =
+        beginStartTag,          // <
+        beginEndTag,            // </
+        beginComment,           // <!--
+        finishTag,              // >
+        finishSelfClosingTag,   // />
+        finishComment,          // -->
+        data,                   // Alphanumeric names starting with letter
+        specialChar,            // &#1234
+        beginDoctype,           // <!
+        other,                  // -- - / , ; . itp
+        singleQuote,            // '
+        doubleQuote,            // "
+        numeric,                // 123
+        error,                  //
+        EOF                     //
     }
 
     private SymbolType type;
