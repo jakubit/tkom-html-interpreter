@@ -1,6 +1,8 @@
 package tkom.parser;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class HtmlTag extends HtmlElement {
@@ -15,13 +17,14 @@ public class HtmlTag extends HtmlElement {
 
     private String name;
     private TagType type;
-    private Map<String, String> attributes;
+    private Map<String, List<String>> attributes;
 
 
     // todo zrobic teleskopowy konstruktor
 
     public HtmlTag() {
         super(ElementType.tag);
+        attributes = new HashMap<String, List<String>>();
     }
 
     public HtmlTag(String name) {
@@ -36,10 +39,12 @@ public class HtmlTag extends HtmlElement {
     }
 
     public void addAtribute(String name, String value) {
-        if(attributes == null)
-            attributes = new HashMap<String, String>();
-
-        attributes.put(name, value);
+        List<String> values = attributes.get(name);
+        if (values == null) {
+            values = new LinkedList<>();
+            attributes.put(name, values);
+        }
+        values.add(value);
     }
 
 
@@ -50,5 +55,10 @@ public class HtmlTag extends HtmlElement {
 
     public void setType(TagType type) {
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + "\tName: " + name + "\tTag-Type: " + type + "\tAttributes: " + attributes.toString();
     }
 }
