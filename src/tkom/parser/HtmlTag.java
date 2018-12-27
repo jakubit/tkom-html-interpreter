@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class HtmlTag extends HtmlElement {
 
@@ -11,20 +12,18 @@ public class HtmlTag extends HtmlElement {
         opening,        // <tag>
         closing,        // </tag>
         selfClosing,    // <tag/>
-        doctype,        // <!tag>
-
     }
 
     private String name;
     private TagType type;
-    private Map<String, List<String>> attributes;
+    private List<Attribute> attributes;
 
 
     // todo zrobic teleskopowy konstruktor
 
     public HtmlTag() {
         super(ElementType.tag);
-        attributes = new HashMap<String, List<String>>();
+        attributes = new LinkedList<>();
     }
 
     public HtmlTag(String name) {
@@ -38,13 +37,22 @@ public class HtmlTag extends HtmlElement {
         this.name = name;
     }
 
-    public void addAtribute(String name, String value) {
-        List<String> values = attributes.get(name);
-        if (values == null) {
-            values = new LinkedList<>();
-            attributes.put(name, values);
+
+    public void addAttribute(String name, String value, Attribute.AttributeType type) throws Exception {
+        Attribute attribute = null;
+        for(Attribute a : attributes) {
+            if (a.getName().equals(name) && a.getType() == type) {
+                attribute = a;
+                break;
+            }
         }
-        values.add(value);
+
+        if (attribute == null) {
+            attribute = new Attribute(name, type);
+            attributes.add(attribute);
+        }
+
+        attribute.addValue(value);
     }
 
 
@@ -59,6 +67,33 @@ public class HtmlTag extends HtmlElement {
 
     @Override
     public String toString() {
-        return super.toString() + "\tName: " + name + "\tTag-Type: " + type + "\tAttributes: " + attributes.toString();
+        String string = super.toString();
+        if (type == TagType.opening) {
+            // <tag attributes>
+            string += "<" + name + " " + attributesToString() + ">";
+        } else if (type == TagType.closing) {
+            // </tag>
+            string += "</" + name + ">";
+        } else {
+            // <tag attributes />
+            string += "<" + name + " " + attributesToString() + "/>";
+        }
+
+        return string;
+    }
+
+    private String attributesToString() {
+
+        StringBuilder string = new StringBuilder("");
+        for(Attribute a : attributes) {
+            string.append(a);
+            string.append(" ");
+        }
+
+        int index = string.lastIndexOf(" ");
+        if (index > 0)
+            string.deleteCharAt(index);
+
+        return string.toString();
     }
 }
