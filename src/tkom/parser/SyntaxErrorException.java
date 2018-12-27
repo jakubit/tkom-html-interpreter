@@ -16,6 +16,19 @@ public class SyntaxErrorException extends Exception {
 
     @Override
     public String toString() {
-        return actual.getPosition() + " SYNTAX ERROR! Expected: '" + expected + "' but actual is: '" + actual.getValue() + "'";
+        StringBuilder string = new StringBuilder("");
+        string.append("SYNTAX ERROR! ");
+        string.append(actual.getPosition());
+        string.append(" Expected: ");
+        for (String s : expected) {
+            string.append(s);
+            string.append(" or ");
+        }
+        int index = string.lastIndexOf(" or ");
+        string.delete(index, index + 4 );
+        string.append(" but actual is: ");
+        string.append(actual.getValue());
+
+        return string.toString();
     }
 }
