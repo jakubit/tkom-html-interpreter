@@ -2,71 +2,42 @@ package tkom.source;
 
 public class TextPosition {
 
-    private long currentLineIndex;
-    private long currentCharIndex;
-    private long lastLineIndex;
-    private long lastCharIndex;
+    private long lineIndex;
+    private long charIndex;
+
 
     public TextPosition() {
-        currentLineIndex = 1;
-        currentCharIndex = 0;
-        lastLineIndex = 0;
-        lastCharIndex = -1;
+        lineIndex = 1;
+        charIndex = 0;
     }
 
     public TextPosition(TextPosition other) {
-        currentLineIndex = other.getCurrentLineIndex();
-        currentCharIndex = other.getCurrentCharIndex();
-        lastLineIndex = other.getLastLineIndex();
-        lastCharIndex = other.getLastCharIndex();
+        lineIndex = other.getLineIndex();
+        charIndex = other.getCharIndex();
     }
 
-    public long getCurrentLineIndex() {
-        return currentLineIndex;
+    public long getLineIndex() {
+        return lineIndex;
     }
 
-    public long getCurrentCharIndex() {
-        return currentCharIndex;
-    }
-
-    public long getLastLineIndex() {
-        return lastLineIndex;
-    }
-
-    public long getLastCharIndex() {
-        return lastCharIndex;
+    public long getCharIndex() {
+        return charIndex;
     }
 
     public void incrementLineIndex() {
-        lastLineIndex = currentLineIndex;
-        currentLineIndex++;
+        lineIndex++;
     }
 
     public void incrementCharIndex() {
-        lastCharIndex = currentCharIndex;
-        currentCharIndex++;
+        charIndex++;
     }
 
-    public void decrementLineIndex() {
-        currentLineIndex = lastLineIndex;
-        lastLineIndex--;
-    }
-
-    public void decrementCharIndex() {
-        currentCharIndex = lastCharIndex;
-        lastCharIndex--;
-    }
-
-    public void setCurrentLineIndex(long currentLineIndex) {
-        this.currentLineIndex = currentLineIndex;
-    }
-
-    public void setCurrentCharIndex(long currentCharIndex) {
-        this.currentCharIndex = currentCharIndex;
+    public void setCharIndex(long charIndex) {
+        this.charIndex = charIndex;
     }
 
     @Override
     public String toString() {
-        return "Line: " + currentLineIndex + " Char: " + currentCharIndex;
+        return "Line: " + lineIndex + " Char: " + charIndex;
     }
 }
