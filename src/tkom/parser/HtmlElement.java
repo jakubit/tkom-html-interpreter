@@ -30,11 +30,15 @@ public class HtmlElement {
 
     @Override
     public String toString() {
-        String toReturn = "Type: " + type;
-        if (type != ElementType.tag) {
-            toReturn += "\tContent: " + content;
+        if (type == ElementType.comment) {
+            return "<!--" + content + "-->";
+        } else if (type == ElementType.text) {
+            return content;
+        } else if (type == ElementType.doctype) {
+            return "<!" + content + ">";
+        } else {
+            return "";
         }
-        return toReturn;
     }
 
 }
