@@ -17,6 +17,7 @@ public class HtmlTag extends HtmlElement {
     private String name;
     private TagType type;
     private List<Attribute> attributes;
+    private boolean closed;
 
 
     // todo zrobic teleskopowy konstruktor
@@ -24,6 +25,7 @@ public class HtmlTag extends HtmlElement {
     public HtmlTag() {
         super(ElementType.tag);
         attributes = new LinkedList<>();
+        closed = false;
     }
 
     public HtmlTag(String name) {
@@ -60,6 +62,13 @@ public class HtmlTag extends HtmlElement {
         this.name = name;
     }
 
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public void setClosed(boolean closed) {
+        this.closed = closed;
+    }
 
     public void setType(TagType type) {
         this.type = type;
@@ -70,13 +79,21 @@ public class HtmlTag extends HtmlElement {
         String string = super.toString();
         if (type == TagType.opening) {
             // <tag attributes>
-            string += "<" + name + " " + attributesToString() + ">";
+            string += "<" + name;
+            if (attributes.size() > 0) {
+                string += " " + attributesToString();
+            }
+            string += ">";
         } else if (type == TagType.closing) {
             // </tag>
             string += "</" + name + ">";
         } else {
             // <tag attributes />
-            string += "<" + name + " " + attributesToString() + "/>";
+            string += "<" + name;
+            if (attributes.size() > 0) {
+                string += " " + attributesToString();
+            }
+            string += "/>";
         }
 
         return string;
