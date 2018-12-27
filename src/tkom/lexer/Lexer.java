@@ -140,8 +140,11 @@ public class Lexer implements ILexer {
             }
         }
 
-        if(source.getCurrentChar() == '/')
-            return new Symbol(Symbol.SymbolType.beginEndTag, "</", textPosition);
+        if(source.getCurrentChar() == '/') {
+            Symbol symbol = new Symbol(Symbol.SymbolType.beginEndTag, "</", textPosition);
+            source.nextChar();
+            return symbol;
+        }
 
         //source.back();
         return new Symbol(Symbol.SymbolType.beginStartTag, "<", textPosition);
@@ -259,6 +262,8 @@ public class Lexer implements ILexer {
             case '=':
             case '/':
             case '>':
+            case '\'':
+            case '\"':
             case '&': return false;
         }
 
