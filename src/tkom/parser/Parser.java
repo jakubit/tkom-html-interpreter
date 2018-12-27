@@ -11,6 +11,9 @@ public class Parser {
     private Lexer lexer;
     private Stack<HtmlElement> htmlElements;
 
+
+    // todo: sprawdzac zamkniecia tagow
+
     public Parser(Lexer lexer) {
         this.lexer = lexer;
         htmlElements = new Stack<>();
@@ -84,13 +87,16 @@ public class Parser {
 
     private void parseDoctype() {
 
+        nextSymbol();
         StringBuilder value = new StringBuilder("");
         while (currentSymbol.getType() != Symbol.SymbolType.finishTag) {
             value.append(currentSymbol.getValue());
+            value.append(" ");
             nextSymbol();
         }
-
+        value.deleteCharAt(value.lastIndexOf(" "));
         pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString()));
+        nextSymbol();
     }
 
     private void parseComment() {
@@ -113,7 +119,6 @@ public class Parser {
             // tag name
             tag.setName(currentSymbol.getValue());
         } else {
-            // todo
             System.out.println("ERROR: In parseClosingTag (1)");
             LinkedList<String> expected = new LinkedList<>();
             expected.add("tagName");
@@ -162,11 +167,11 @@ public class Parser {
         else if (currentSymbol.getType() == Symbol.SymbolType.finishSelfClosingTag)
             tag.setType(HtmlTag.TagType.selfClosing);
         else {
-            // todo
             System.out.println("ERROR: In parseOpeningTag (1)");
             LinkedList<String> expected = new LinkedList<>();
             expected.add(">");
             expected.add("/>");
+            expected.add("attributeName");
             throw new SyntaxErrorException(expected, currentSymbol);
         }
 
@@ -229,7 +234,7 @@ public class Parser {
     }
 
     private void pushStack(HtmlElement element) {
-        System.out.println(element);
+        //System.out.println(element);
         htmlElements.push(element);
     }
 
