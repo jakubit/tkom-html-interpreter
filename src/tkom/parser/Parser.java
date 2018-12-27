@@ -4,6 +4,7 @@ import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
 
 import java.util.Stack;
+import java.util.stream.Stream;
 
 public class Parser {
     private Symbol currentSymbol;
@@ -15,18 +16,19 @@ public class Parser {
         htmlElements = new Stack<>();
     }
 
+    public void printStack() {
+        htmlElements.stream().forEach(System.out::println);
+    }
+
     public void parse() {
         nextSymbol();
 
         while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
             // parse
-            nextSymbol();
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
                 // <
-                // parse opening tag
                 parseOpeningTag();
-
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                 // </
                 parseClosingTag();
@@ -36,25 +38,57 @@ public class Parser {
             } else  if (currentSymbol.getType() == Symbol.SymbolType.beginDoctype) {
                 // <!DOCTYPE
                 parseDoctype();
+            } else {
+                parseText();
             }
         }
     }
 
-    private void parseDoctype() {
-        // todo wartosci
-        while (currentSymbol.getType() != Symbol.SymbolType.finishTag)
+    private void parseText() {
+        // caly tekst pomiedzy znacznikami
+        StringBuilder value = new StringBuilder("");
+        while (textTypeSymbol(currentSymbol)) {
+            value.append(currentSymbol.getValue());
+            value.append(" ");
             nextSymbol();
+        }
 
-        htmlElements.push(new HtmlElement(HtmlElement.ElementType.doctype));
+        pushStack(new HtmlElement(HtmlElement.ElementType.text, value.toString()));
+    }
+
+    private boolean textTypeSymbol(Symbol symbol) {
+        if (symbol.getType() == Symbol.SymbolType.beginStartTag
+            || symbol.getType() == Symbol.SymbolType.beginEndTag
+            || symbol.getType() == Symbol.SymbolType.beginComment
+            || symbol.getType() == Symbol.SymbolType.beginDoctype)
+            return false;
+
+        return true;
+    }
+
+    private void parseDoctype() {
+
+        StringBuilder value = new StringBuilder("");
+        while (currentSymbol.getType() != Symbol.SymbolType.finishTag) {
+            value.append(currentSymbol.getValue());
+            nextSymbol();
+        }
+
+        pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString()));
     }
 
     private void parseComment() {
         // todo tekst komentarza
 
-        while (currentSymbol.getType() != Symbol.SymbolType.finishComment)
+        nextSymbol();
+        StringBuilder value = new StringBuilder("");
+        while (currentSymbol.getType() != Symbol.SymbolType.finishComment) {
+            value.append(currentSymbol.getValue());
+            value.append(" ");
             nextSymbol();
-
-        htmlElements.push(new HtmlElement(HtmlElement.ElementType.comment));
+        }
+        pushStack(new HtmlElement(HtmlElement.ElementType.comment, value.toString()));
+        nextSymbol();
     }
 
 
@@ -66,7 +100,7 @@ public class Parser {
             tag.setName(currentSymbol.getValue());
         } else {
             // todo
-            System.out.println("ERROR: In parseClosingtag");
+            System.out.println("ERROR: In parseClosingTag (1)");
             return;
         }
 
@@ -75,83 +109,104 @@ public class Parser {
             tag.setType(HtmlTag.TagType.closing);
         } else {
             // todo
-            System.out.println("ERROR: In parseClosingtag");
+            System.out.println("ERROR: In parseClosingTag (2)");
             return;
         }
 
         // Add tag to html elements stack
-        htmlElements.push(tag);
+        pushStack(tag);
+        nextSymbol();
     }
 
     private void parseOpeningTag() {
+        // teraz ma tylko <
+
         nextSymbol();
         HtmlTag tag = new HtmlTag();
 
-        if (currentSymbol.getType() == Symbol.SymbolType.data)
+        if (currentSymbol.getType() == Symbol.SymbolType.data) {
+            // znaleziono nazwe tagu, teraz mam <tagName
             tag.setName(currentSymbol.getValue());
-        else
-            //todo  error
-            ;
+        } else {
+            // todo
+            System.out.println("ERROR: In parseOpeningTag (1)");
+            return;
+        }
 
         nextSymbol();
+
+        // jesli jest data, to na pewno jest to atrybut, przeparsuj je
         if (currentSymbol.getType() == Symbol.SymbolType.data)
             parseAttributes(tag);
-        else if (currentSymbol.getType() == Symbol.SymbolType.finishTag)
+
+        // koniec parsowania atrybutow, teraz szukamy zamkniecia
+        if (currentSymbol.getType() == Symbol.SymbolType.finishTag)
             tag.setType(HtmlTag.TagType.opening);
         else if (currentSymbol.getType() == Symbol.SymbolType.finishSelfClosingTag)
             tag.setType(HtmlTag.TagType.selfClosing);
         else {
             // todo
-            System.out.println("ERROR: parseOpeningtag");
+            System.out.println("ERROR: parseOpeningtag (2)");
             return;
         }
 
         // Add tag to html elements stack
-        htmlElements.push(tag);
+        pushStack(tag);
+        nextSymbol();
     }
 
     private void parseAttributes(HtmlTag tag) {
-        String attrName = currentSymbol.getValue();
-        nextSymbol();
-
-        do {
-            if(currentSymbol.getType() == Symbol.SymbolType.attrributeAssing) {
-                nextSymbol();
-                if(currentSymbol.getType() == Symbol.SymbolType.data) {
-                    //unquoted attribute value
-                    tag.addAtribute(attrName, currentSymbol.getValue());
-                } else if(currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
-                    // single quoted attribute value
-                    StringBuilder value = new StringBuilder("");
-                    nextSymbol();
-                    while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
-                        value.append(currentSymbol.getValue());
-                        nextSymbol();
-                    }
-                    tag.addAtribute(attrName, value.toString());
-                } else if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
-                    // double quoted attribute value
-                    StringBuilder value = new StringBuilder("");
-                    nextSymbol();
-                    while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
-                        value.append(currentSymbol.getValue());
-                        nextSymbol();
-                    }
-                    tag.addAtribute(attrName, value.toString());
-                } else
-                    // todo error
-                    ;
-            } else {
-                // no value attribute
-                tag.addAtribute(attrName, "");
-            }
+        while (currentSymbol.getType() == Symbol.SymbolType.data) {
+            parseAttribute(tag);
             nextSymbol();
-        } while (currentSymbol.getType() != Symbol.SymbolType.finishTag && currentSymbol.getType() != Symbol.SymbolType.finishSelfClosingTag);
+        }
+    }
+
+    private void parseAttribute(HtmlTag tag) {
+        // parse one attribute
+
+        // name, mam na pewno <tagName attrName
+        String attrName = currentSymbol.getValue();
+
+        nextSymbol();
+        if (currentSymbol.getType() == Symbol.SymbolType.attrributeAssing) {
+            // <tagName attrName=
+            nextSymbol();
+            if (currentSymbol.getType() == Symbol.SymbolType.data) {
+                // unquoted attr value
+                tag.addAtribute(attrName, currentSymbol.getValue());
+            } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
+                // single quoted attr value
+                nextSymbol();
+                while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
+                    tag.addAtribute(attrName, currentSymbol.getValue());
+                    nextSymbol();
+                }
+            } else if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
+                // double quoted attribute value
+                nextSymbol();
+                while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
+                    tag.addAtribute(attrName, currentSymbol.getValue());
+                    nextSymbol();
+                }
+            } else {
+                // todo
+                System.out.println("ERROR: In parse attribute!");
+            }
+        } else {
+            // no value attribute
+            tag.addAtribute(attrName, "");
+        }
+    }
+
+    private void pushStack(HtmlElement element) {
+        System.out.println(element);
+        htmlElements.push(element);
     }
 
 
     private void nextSymbol() {
         currentSymbol = lexer.nextSymbol();
-        System.out.println("PARSER:\tDostalem symbol: " + currentSymbol);
+        //System.out.println("PARSER:\tDostalem symbol: " + currentSymbol);
     }
 }
