@@ -67,6 +67,6 @@ public class TextPosition {
 
     @Override
     public String toString() {
-        return "Current Line Index: " + currentLineIndex + " Current Char Index: " + currentCharIndex;
+        return "Line: " + currentLineIndex + " Char: " + currentCharIndex;
     }
 }
