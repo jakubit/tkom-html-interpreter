@@ -3,8 +3,8 @@ package tkom.parser;
 import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
 
+import java.util.LinkedList;
 import java.util.Stack;
-import java.util.stream.Stream;
 
 public class Parser {
     private Symbol currentSymbol;
@@ -28,10 +28,22 @@ public class Parser {
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
                 // <
-                parseOpeningTag();
+                try {
+                    parseOpeningTag();
+                } catch (SyntaxErrorException e) {
+                    e.printStackTrace();
+                    break;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                 // </
-                parseClosingTag();
+                try {
+                    parseClosingTag();
+                } catch (SyntaxErrorException e) {
+                    e.printStackTrace();
+                    break;
+                }
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginComment) {
                 // <!--
                 parseComment();
@@ -45,8 +57,12 @@ public class Parser {
     }
 
     private void parseText() {
+        parseTextStartingWith("");
+    }
+
+    private void parseTextStartingWith(String text) {
         // caly tekst pomiedzy znacznikami
-        StringBuilder value = new StringBuilder("");
+        StringBuilder value = new StringBuilder(text);
         while (textTypeSymbol(currentSymbol)) {
             value.append(currentSymbol.getValue());
             value.append(" ");
@@ -78,8 +94,6 @@ public class Parser {
     }
 
     private void parseComment() {
-        // todo tekst komentarza
-
         nextSymbol();
         StringBuilder value = new StringBuilder("");
         while (currentSymbol.getType() != Symbol.SymbolType.finishComment) {
@@ -92,7 +106,7 @@ public class Parser {
     }
 
 
-    private void parseClosingTag() {
+    private void parseClosingTag() throws SyntaxErrorException {
         HtmlTag tag = new HtmlTag();
         nextSymbol();
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
@@ -101,16 +115,20 @@ public class Parser {
         } else {
             // todo
             System.out.println("ERROR: In parseClosingTag (1)");
-            return;
+            LinkedList<String> expected = new LinkedList<>();
+            expected.add("tagName");
+            throw new SyntaxErrorException(expected, currentSymbol);
         }
 
         nextSymbol();
         if(currentSymbol.getType() == Symbol.SymbolType.finishTag) {
             tag.setType(HtmlTag.TagType.closing);
         } else {
-            // todo
+            // niepoprawne zamkniecie closingTagu
             System.out.println("ERROR: In parseClosingTag (2)");
-            return;
+            LinkedList<String> expected = new LinkedList<>();
+            expected.add(">");
+            throw new SyntaxErrorException(expected, currentSymbol);
         }
 
         // Add tag to html elements stack
@@ -118,8 +136,8 @@ public class Parser {
         nextSymbol();
     }
 
-    private void parseOpeningTag() {
-        // teraz ma tylko <
+    private void parseOpeningTag() throws SyntaxErrorException, Exception {
+        // teraz mam tylko <
 
         nextSymbol();
         HtmlTag tag = new HtmlTag();
@@ -128,8 +146,7 @@ public class Parser {
             // znaleziono nazwe tagu, teraz mam <tagName
             tag.setName(currentSymbol.getValue());
         } else {
-            // todo
-            System.out.println("ERROR: In parseOpeningTag (1)");
+            parseTextStartingWith("<");
             return;
         }
 
@@ -146,8 +163,11 @@ public class Parser {
             tag.setType(HtmlTag.TagType.selfClosing);
         else {
             // todo
-            System.out.println("ERROR: parseOpeningtag (2)");
-            return;
+            System.out.println("ERROR: In parseOpeningTag (1)");
+            LinkedList<String> expected = new LinkedList<>();
+            expected.add(">");
+            expected.add("/>");
+            throw new SyntaxErrorException(expected, currentSymbol);
         }
 
         // Add tag to html elements stack
@@ -155,14 +175,14 @@ public class Parser {
         nextSymbol();
     }
 
-    private void parseAttributes(HtmlTag tag) {
+    private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, Exception {
         while (currentSymbol.getType() == Symbol.SymbolType.data) {
             parseAttribute(tag);
-            nextSymbol();
+            //nextSymbol();
         }
     }
 
-    private void parseAttribute(HtmlTag tag) {
+    private void parseAttribute(HtmlTag tag) throws SyntaxErrorException, Exception {
         // parse one attribute
 
         // name, mam na pewno <tagName attrName
@@ -172,30 +192,39 @@ public class Parser {
         if (currentSymbol.getType() == Symbol.SymbolType.attrributeAssing) {
             // <tagName attrName=
             nextSymbol();
-            if (currentSymbol.getType() == Symbol.SymbolType.data) {
+            if (currentSymbol.getType() == Symbol.SymbolType.data || currentSymbol.getType() == Symbol.SymbolType.numeric) {
                 // unquoted attr value
-                tag.addAtribute(attrName, currentSymbol.getValue());
+                tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.unquoted);
             } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
                 // single quoted attr value
                 nextSymbol();
                 while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
-                    tag.addAtribute(attrName, currentSymbol.getValue());
+                    tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.singleQuoted);
                     nextSymbol();
                 }
             } else if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
                 // double quoted attribute value
                 nextSymbol();
                 while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
-                    tag.addAtribute(attrName, currentSymbol.getValue());
+                    tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.doubleQuoted);
                     nextSymbol();
                 }
             } else {
-                // todo
-                System.out.println("ERROR: In parse attribute!");
+                System.out.println("ERROR: In parseAttribute");
+
+                LinkedList<String> expected = new LinkedList<>();
+                expected.add("value");
+                expected.add("'");
+                expected.add("\"");
+
+                throw new SyntaxErrorException(expected, currentSymbol);
             }
+
+            nextSymbol();
         } else {
             // no value attribute
-            tag.addAtribute(attrName, "");
+            //System.out.println("No value attr\n");
+            tag.addAttribute(attrName, "", Attribute.AttributeType.noValue);
         }
     }
 
