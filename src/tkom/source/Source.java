@@ -32,7 +32,7 @@ public class Source implements ISource {
             if(currentChar == '\n') {
                 // New line
                 textPosition.incrementLineIndex();
-                textPosition.setCurrentCharIndex(0);
+                textPosition.setCharIndex(0);
             } else {
                 // Same line
                 textPosition.incrementCharIndex();
@@ -51,38 +51,6 @@ public class Source implements ISource {
     @Override
     public void error() {
 
-    }
-
-    public void mark() {
-        try {
-            reader.mark(1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void back() {
-        try {
-            if(currentChar == '\n') {
-                // Previous line
-                textPosition.decrementLineIndex();
-                textPosition.decrementCharIndex();
-            } else {
-                // Same line
-                textPosition.decrementCharIndex();
-            }
-            reader.reset();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public long getLineIndex() {
-        return textPosition.getCurrentLineIndex();
-    }
-
-    public long getCharIndex() {
-        return textPosition.getCurrentCharIndex();
     }
 
     public TextPosition getTextPosition() {
