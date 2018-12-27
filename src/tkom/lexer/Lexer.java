@@ -135,7 +135,7 @@ public class Lexer implements ILexer {
             } else {
                 //source.back();
                 Symbol symbol = new Symbol(Symbol.SymbolType.beginDoctype, "<!", textPosition);
-                source.nextChar();
+                //source.nextChar();
                 return symbol;
             }
         }
