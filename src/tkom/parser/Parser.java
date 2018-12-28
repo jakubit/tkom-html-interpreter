@@ -14,6 +14,12 @@ public class Parser {
     private Lexer lexer;
     private Stack<HtmlElement> htmlElements;
 
+    /* TODO: KNOWN BUGS:
+     * # ingoruje atrybuty doubleQuoted z pusta wartoscia
+     * # problem z whitespaceami - dodaje je na rympal
+     * # nie parsuj zawartosci tagu <script></script>
+     */
+
 
     // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
 
@@ -229,7 +235,11 @@ public class Parser {
 
         // Add tag to html elements stack
         pushStack(tag);
+
         nextSymbol();
+
+        // If <script> then skip content
+        skipScript(tag);
     }
 
     private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, Exception {
@@ -337,6 +347,30 @@ public class Parser {
         value.append(currentSymbol.getValue());
 
         return value.toString();
+    }
+
+    private void skipScript(HtmlTag tag){
+        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script")) {
+            // skip content
+            System.out.println("Skipping script starting at " + currentSymbol.getPosition());
+
+            while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
+                //System.out.println("skipped");
+                if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+                    nextSymbol();
+                    if (currentSymbol.getValue().toLowerCase().equals("script")) {
+                        nextSymbol();
+                        if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                            nextSymbol();
+                            break;
+                        }
+                    }
+                } else {
+                    nextSymbol();
+                }
+            }
+            System.out.println("Skipped to " + currentSymbol.getPosition());
+        }
     }
 
 
