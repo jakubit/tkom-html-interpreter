@@ -3,6 +3,7 @@ package tkom.parser;
 import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
 
+import javax.swing.text.html.HTML;
 import java.util.LinkedList;
 import java.util.Stack;
 
@@ -12,7 +13,7 @@ public class Parser {
     private Stack<HtmlElement> htmlElements;
 
 
-    // todo: sprawdzac zamkniecia tagow
+    // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
@@ -38,12 +39,16 @@ public class Parser {
                     break;
                 } catch (Exception e) {
                     e.printStackTrace();
+                    break;
                 }
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                 // </
                 try {
                     parseClosingTag();
                 } catch (SyntaxErrorException e) {
+                    e.printStackTrace();
+                    break;
+                } catch (ClosingTagException e) {
                     e.printStackTrace();
                     break;
                 }
@@ -56,6 +61,13 @@ public class Parser {
             } else {
                 parseText();
             }
+        }
+
+        // Check if every opening tag has its own closing tag
+        try {
+            openingTag();
+        } catch (ClosingTagException e) {
+            e.printStackTrace();
         }
     }
 
@@ -72,7 +84,7 @@ public class Parser {
             nextSymbol();
         }
 
-        pushStack(new HtmlElement(HtmlElement.ElementType.text, value.toString()));
+        pushStack(new HtmlElement(HtmlElement.ElementType.text, value.toString(), currentSymbol.getPosition()));
     }
 
     private boolean textTypeSymbol(Symbol symbol) {
@@ -95,7 +107,7 @@ public class Parser {
             nextSymbol();
         }
         value.deleteCharAt(value.lastIndexOf(" "));
-        pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString()));
+        pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString(), currentSymbol.getPosition()));
         nextSymbol();
     }
 
@@ -107,13 +119,13 @@ public class Parser {
             value.append(" ");
             nextSymbol();
         }
-        pushStack(new HtmlElement(HtmlElement.ElementType.comment, value.toString()));
+        pushStack(new HtmlElement(HtmlElement.ElementType.comment, value.toString(), currentSymbol.getPosition()));
         nextSymbol();
     }
 
 
-    private void parseClosingTag() throws SyntaxErrorException {
-        HtmlTag tag = new HtmlTag();
+    private void parseClosingTag() throws SyntaxErrorException, ClosingTagException {
+        HtmlTag tag = new HtmlTag(currentSymbol.getPosition());
         nextSymbol();
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
             // tag name
@@ -138,6 +150,9 @@ public class Parser {
 
         // Add tag to html elements stack
         pushStack(tag);
+
+        // Close corresponding opening tag
+        closeTag(tag);
         nextSymbol();
     }
 
@@ -145,7 +160,7 @@ public class Parser {
         // teraz mam tylko <
 
         nextSymbol();
-        HtmlTag tag = new HtmlTag();
+        HtmlTag tag = new HtmlTag(currentSymbol.getPosition());
 
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
             // znaleziono nazwe tagu, teraz mam <tagName
@@ -164,9 +179,10 @@ public class Parser {
         // koniec parsowania atrybutow, teraz szukamy zamkniecia
         if (currentSymbol.getType() == Symbol.SymbolType.finishTag)
             tag.setType(HtmlTag.TagType.opening);
-        else if (currentSymbol.getType() == Symbol.SymbolType.finishSelfClosingTag)
+        else if (currentSymbol.getType() == Symbol.SymbolType.finishSelfClosingTag) {
             tag.setType(HtmlTag.TagType.selfClosing);
-        else {
+            tag.setClosed(true);
+        } else {
             System.out.println("ERROR: In parseOpeningTag (1)");
             LinkedList<String> expected = new LinkedList<>();
             expected.add(">");
@@ -232,6 +248,36 @@ public class Parser {
             tag.addAttribute(attrName, "", Attribute.AttributeType.noValue);
         }
     }
+
+    private void openingTag() throws ClosingTagException {
+        for (HtmlElement element : htmlElements) {
+            if (element.getType() == HtmlElement.ElementType.tag && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening && !((HtmlTag)element).isClosed())
+                throw new ClosingTagException((HtmlTag)element, null, element.getPosition());
+        }
+    }
+
+    private void closeTag(HtmlTag closingTag) throws ClosingTagException {
+        // todo lepsza nazwa
+        // znajdz tag odpowiadajacy
+        HtmlTag openingTag = null;
+
+        // todo zrob na stremach
+        for(HtmlElement element : htmlElements) {
+            if (element.getType() == HtmlElement.ElementType.tag && ((HtmlTag)element).getName().equals(closingTag.getName()) && !((HtmlTag)element).isClosed() && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening) {
+                openingTag = (HtmlTag) element;
+                break;
+            }
+        }
+
+        if (openingTag != null) {
+            openingTag.setClosed(true);
+            closingTag.setClosed(true);
+        } else {
+            throw new ClosingTagException(null, closingTag, currentSymbol.getPosition());
+        }
+
+    }
+
 
     private void pushStack(HtmlElement element) {
         //System.out.println(element);
