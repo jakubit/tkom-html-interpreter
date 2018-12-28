@@ -1,5 +1,7 @@
 package tkom.parser;
 
+import tkom.source.TextPosition;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,21 +24,10 @@ public class HtmlTag extends HtmlElement {
 
     // todo zrobic teleskopowy konstruktor
 
-    public HtmlTag() {
-        super(ElementType.tag);
+    public HtmlTag(TextPosition position) {
+        super(ElementType.tag, position);
         attributes = new LinkedList<>();
         closed = false;
-    }
-
-    public HtmlTag(String name) {
-        super(ElementType.tag);
-        this.name = name;
-    }
-
-    public HtmlTag(TagType type, String name) {
-        super(ElementType.tag);
-        this.type = type;
-        this.name = name;
     }
 
 
@@ -57,6 +48,13 @@ public class HtmlTag extends HtmlElement {
         attribute.addValue(value);
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public TagType getTagType() {
+        return type;
+    }
 
     public void setName(String name) {
         this.name = name;

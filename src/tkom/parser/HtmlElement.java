@@ -1,5 +1,8 @@
 package tkom.parser;
 
+import tkom.lexer.Symbol;
+import tkom.source.TextPosition;
+
 public class HtmlElement {
     public enum ElementType {
         tag,
@@ -10,14 +13,21 @@ public class HtmlElement {
 
     private final ElementType type;
     private String content;
+    private TextPosition position;
 
-    public HtmlElement(ElementType type) {
+    public HtmlElement(ElementType type, TextPosition position) {
         this.type = type;
+        this.position = position;
     }
 
-    public HtmlElement(ElementType type, String content) {
+    public HtmlElement(ElementType type, String content, TextPosition position) {
         this.type = type;
         this.content = content;
+        this.position = position;
+    }
+
+    public TextPosition getPosition() {
+        return position;
     }
 
     public String getContent() {
@@ -26,6 +36,10 @@ public class HtmlElement {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public ElementType getType() {
+        return type;
     }
 
     @Override
