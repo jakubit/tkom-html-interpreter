@@ -30,6 +30,16 @@ public class HtmlTag extends HtmlElement {
         closed = false;
     }
 
+    public HtmlTag(String name, TagType type, TextPosition position) {
+        super(ElementType.tag, position);
+        attributes = new LinkedList<>();
+        closed = false;
+
+        this.name = name;
+        this.type = type;
+    }
+
+
 
     public void addAttribute(String name, String value, Attribute.AttributeType type) throws Exception {
         Attribute attribute = null;
