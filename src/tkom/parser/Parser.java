@@ -356,15 +356,23 @@ public class Parser {
     }
 
     private void closeTag(HtmlTag openingTag, int index) throws ClosingTagException {
-
+        int nested = 0;
         for (int i = index + 1; i < htmlElements.size(); i++) {
             if (htmlElements.get(i).getType() == HtmlElement.ElementType.tag) {
                 HtmlTag tag = (HtmlTag) htmlElements.get(i);
-                if (tag.getTagType() == HtmlTag.TagType.closing && tag.getName().toLowerCase().equals(openingTag.getName().toLowerCase())) {
-                    // znaleziono domkniecie
-                    openingTag.setClosed(true);
-                    tag.setClosed(true);
-                    break;
+                if (tag.getName().toLowerCase().equals(openingTag.getName().toLowerCase())) {
+                    if (tag.getTagType() == HtmlTag.TagType.opening)
+                        nested++;
+                    else if (tag.getTagType() == HtmlTag.TagType.closing) {
+                        if (nested == 0) {
+                            // znaleziono domkniecie
+                            openingTag.setClosed(true);
+                            tag.setClosed(true);
+                            break;
+                        } else {
+                            nested--;
+                        }
+                    }
                 } else if (tag.getTagType() == HtmlTag.TagType.closing && tag.isClosed()) {
                     // error
                     throw new ClosingTagException(openingTag, null, openingTag.getPosition());
@@ -383,7 +391,6 @@ public class Parser {
                     else
                         throw new ClosingTagException(tag, null, tag.getPosition());
                 }
-
             }
         }
     }
