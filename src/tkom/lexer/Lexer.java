@@ -16,6 +16,9 @@ public class Lexer implements ILexer {
     }
 
     public Symbol nextSymbol() {
+
+
+
         /*
         * TODO
         * 1. Ogarnac max value zeby rzucalo jakims wyjatkiem czy cos
@@ -231,13 +234,13 @@ public class Lexer implements ILexer {
                 return symbol;
             } else {
                 //source.back();
-                Symbol symbol = new Symbol(Symbol.SymbolType.other, "--", textPosition);
+                Symbol symbol = new Symbol(Symbol.SymbolType.data, "--", textPosition);
                 //source.nextChar();
                 return symbol;
             }
         } else {
             //source.back();
-            Symbol symbol = new Symbol(Symbol.SymbolType.other, "-", textPosition);
+            Symbol symbol = new Symbol(Symbol.SymbolType.data, "-", textPosition);
             //source.nextChar();
             return symbol;
         }
@@ -245,13 +248,21 @@ public class Lexer implements ILexer {
 
 
     private Symbol lettersAndDigits(TextPosition textPosition) {
+
+
         StringBuilder value = new StringBuilder("");
         int length = 0;
         while (length < MAX_LENGTH && !Character.isWhitespace(source.getCurrentChar()) && characterAllowedInName(source.getCurrentChar())) {
             //source.mark();
-            value.append(String.valueOf(source.getCurrentChar()));
-            source.nextChar();
-            length++;
+
+            // todo tresc komentarza jest pomijana gdy skleja sie z symbolem finishComment
+            if (source.getCurrentChar() == '-')
+                return dashOrFinishComment(source.getTextPosition());
+
+                value.append(String.valueOf(source.getCurrentChar()));
+                source.nextChar();
+                length++;
+
         }
         //source.back();
         return new Symbol(Symbol.SymbolType.data, value.toString(), textPosition);
