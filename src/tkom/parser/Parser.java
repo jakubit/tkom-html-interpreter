@@ -142,9 +142,7 @@ public class Parser {
                 }
             }
         }
-
         nextSymbol();
-
     }
 
     private void parseComment() {
@@ -326,7 +324,7 @@ public class Parser {
         StringBuilder value = new StringBuilder("\"");
 
         nextSymbol();
-        while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote || currentSymbol.getType() == Symbol.SymbolType.EOF) {
+        while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote && currentSymbol.getType() != Symbol.SymbolType.EOF) {
             value.append(currentSymbol.getValue());
             nextSymbol();
         }
