@@ -350,27 +350,7 @@ public class Parser {
     }
 
     private void skipScript(HtmlTag tag){
-        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script")) {
-            // skip content
-            System.out.println("Skipping script starting at " + currentSymbol.getPosition());
 
-            while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
-                //System.out.println("skipped");
-                if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
-                    nextSymbol();
-                    if (currentSymbol.getValue().toLowerCase().equals("script")) {
-                        nextSymbol();
-                        if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
-                            nextSymbol();
-                            break;
-                        }
-                    }
-                } else {
-                    nextSymbol();
-                }
-            }
-            System.out.println("Skipped to " + currentSymbol.getPosition());
-        }
     }
 
 
