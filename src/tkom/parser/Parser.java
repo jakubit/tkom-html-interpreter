@@ -4,7 +4,9 @@ import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
 
 import javax.swing.text.html.HTML;
+import java.io.EOFException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
 
 public class Parser {
@@ -24,7 +26,7 @@ public class Parser {
         htmlElements.stream().forEach(System.out::println);
     }
 
-    public void parse() {
+    public void parse() throws Exception {
         nextSymbol();
 
         while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
@@ -32,31 +34,15 @@ public class Parser {
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
                 // <
-                try {
-                    parseOpeningTag();
-                } catch (SyntaxErrorException e) {
-                    e.printStackTrace();
-                    break;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    break;
-                }
+                parseOpeningTag();
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                 // </
-                try {
-                    parseClosingTag();
-                } catch (SyntaxErrorException e) {
-                    e.printStackTrace();
-                    break;
-                } catch (ClosingTagException e) {
-                    e.printStackTrace();
-                    break;
-                }
+                parseClosingTag();
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginComment) {
                 // <!--
                 parseComment();
             } else  if (currentSymbol.getType() == Symbol.SymbolType.beginDoctype) {
-                // <!DOCTYPE
+                // <!
                 parseDoctype();
             } else {
                 parseText();
@@ -64,11 +50,7 @@ public class Parser {
         }
 
         // Check if every opening tag has its own closing tag
-        try {
-            openingTag();
-        } catch (ClosingTagException e) {
-            e.printStackTrace();
-        }
+        openingTag();
     }
 
     private void parseText() {
@@ -97,18 +79,72 @@ public class Parser {
         return true;
     }
 
-    private void parseDoctype() {
+    private void parseDoctype() throws SyntaxErrorException, UnexpectedEOFException {
+        nextSymbol();
+        StringBuilder value = new StringBuilder();
+
+        if (!currentSymbol.getValue().toLowerCase().equals("doctype")) {
+           // traktuj jako tekst
+            parseTextStartingWith("<!" + currentSymbol.getValue());
+        } else {
+            // <!doctype
+            value.append(currentSymbol.getValue());
+            nextSymbol();
+            if (!currentSymbol.getValue().toLowerCase().equals("html")) {
+                LinkedList<String> expected = new LinkedList<>();
+                expected.add("html");
+                throw new SyntaxErrorException(expected, currentSymbol);
+            } else {
+                // <!doctype html
+                value.append(" ");
+                value.append(currentSymbol.getValue());
+                nextSymbol();
+                if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                    // <!doctype html> HTML5 ok
+                    //value.append(currentSymbol.getValue());
+                    pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString(), currentSymbol.getPosition()));
+                } else if (currentSymbol.getValue().toLowerCase().equals("public")) {
+                    // <!doctype html public
+                    value.append(" ");
+                    value.append(currentSymbol.getValue());
+                    nextSymbol();
+                    if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
+                        value.append(" ");
+                        value.append(parseDoubleQuoted());
+                        nextSymbol();
+                        if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
+                            value.append(" ");
+                            value.append(parseDoubleQuoted());
+                            nextSymbol();
+                            if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                                // <!doctype html public "link1" "link2"> HTML 4 and lower ok
+                                //value.append(currentSymbol.getValue());
+                                pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString(), currentSymbol.getPosition()));
+                            } else {
+                                LinkedList<String> expected = new LinkedList<>();
+                                expected.add(">");
+                                throw new SyntaxErrorException(expected, currentSymbol);
+                            }
+                        } else {
+                            LinkedList<String> expected = new LinkedList<>();
+                            expected.add("\"");
+                            throw new SyntaxErrorException(expected, currentSymbol);
+                        }
+                    } else {
+                        LinkedList<String> expected = new LinkedList<>();
+                        expected.add("\"");
+                        throw new SyntaxErrorException(expected, currentSymbol);
+                    }
+                } else {
+                    LinkedList<String> expected = new LinkedList<>();
+                    expected.add("public");
+                    throw new SyntaxErrorException(expected, currentSymbol);
+                }
+            }
+        }
 
         nextSymbol();
-        StringBuilder value = new StringBuilder("");
-        while (currentSymbol.getType() != Symbol.SymbolType.finishTag) {
-            value.append(currentSymbol.getValue());
-            value.append(" ");
-            nextSymbol();
-        }
-        value.deleteCharAt(value.lastIndexOf(" "));
-        pushStack(new HtmlElement(HtmlElement.ElementType.doctype, value.toString(), currentSymbol.getPosition()));
-        nextSymbol();
+
     }
 
     private void parseComment() {
@@ -153,6 +189,8 @@ public class Parser {
 
         // Close corresponding opening tag
         closeTag(tag);
+
+        // Next symbol
         nextSymbol();
     }
 
@@ -261,11 +299,17 @@ public class Parser {
         // znajdz tag odpowiadajacy
         HtmlTag openingTag = null;
 
-        // todo zrob na stremach
-        for(HtmlElement element : htmlElements) {
-            if (element.getType() == HtmlElement.ElementType.tag && ((HtmlTag)element).getName().equals(closingTag.getName()) && !((HtmlTag)element).isClosed() && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening) {
-                openingTag = (HtmlTag) element;
-                break;
+        // todo bug:
+        for (int i = htmlElements.size() - 1; i >= 0; i--) {
+            HtmlElement element = htmlElements.get(i);
+            if (element.getType() == HtmlElement.ElementType.tag && !((HtmlTag)element).isClosed() && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening) {
+                if (((HtmlTag)element).getName().equals(closingTag.getName())) {
+                    openingTag = (HtmlTag) element;
+                    break;
+                } else {
+                    // zla kolejnosc tagow zamykajacych
+                    throw new ClosingTagException((HtmlTag) element, null, closingTag.getPosition());
+                }
             }
         }
 
@@ -276,6 +320,25 @@ public class Parser {
             throw new ClosingTagException(null, closingTag, currentSymbol.getPosition());
         }
 
+    }
+
+    private String parseDoubleQuoted() throws UnexpectedEOFException {
+        StringBuilder value = new StringBuilder("\"");
+
+        nextSymbol();
+        while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote || currentSymbol.getType() == Symbol.SymbolType.EOF) {
+            value.append(currentSymbol.getValue());
+            nextSymbol();
+        }
+
+        // EOF error handling
+        if (currentSymbol.getType() == Symbol.SymbolType.EOF) {
+            throw new UnexpectedEOFException("\"", currentSymbol.getPosition());
+        }
+
+        value.append(currentSymbol.getValue());
+
+        return value.toString();
     }
 
 
