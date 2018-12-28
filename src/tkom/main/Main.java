@@ -14,8 +14,14 @@ public class Main {
         Lexer l = new Lexer(s);
         Parser p = new Parser(l);
 
-        p.parse();
-        //p.printStack();
+
+        try {
+            p.parse();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        p.printStack();
 
         /*
         Symbol symbol;
