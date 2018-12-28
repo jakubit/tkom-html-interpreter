@@ -34,9 +34,15 @@ public class Parser {
 
     public void parse() throws Exception {
         nextSymbol();
-
         while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
-            // parse
+            parseElement();
+        }
+        // Check if every opening tag has its own closing tag
+        openingTag();
+    }
+
+
+    public void parseElement() throws Exception {
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
                 // <
@@ -53,10 +59,7 @@ public class Parser {
             } else {
                 parseText();
             }
-        }
 
-        // Check if every opening tag has its own closing tag
-        openingTag();
     }
 
     private void parseText() {
