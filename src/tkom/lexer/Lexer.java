@@ -199,7 +199,7 @@ public class Lexer implements ILexer {
         } else {
             //source.back();
             Symbol symbol = new Symbol(Symbol.SymbolType.other, "/", textPosition);
-            source.nextChar();
+            //source.nextChar();
             return symbol;
         }
     }
@@ -264,6 +264,7 @@ public class Lexer implements ILexer {
             case '>':
             case '\'':
             case '\"':
+            case '<':
             case '&': return false;
         }
 
