@@ -3,19 +3,18 @@ package tkom.parser;
 import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
 
-import javax.swing.text.html.HTML;
-import java.io.EOFException;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Stack;
 
 public class Parser {
     private Symbol currentSymbol;
     private Lexer lexer;
     private Stack<HtmlElement> htmlElements;
+    private boolean strict;
 
     /* TODO: KNOWN BUGS:
      * # ingoruje atrybuty doubleQuoted z pusta wartoscia
+     * # problem parsowaniem komentarza! nie znajduje --> jesli cos przed nim stoi bez spacji
      * # problem z whitespaceami - dodaje je na rympal
      * # nie parsuj zawartosci tagu <script></script>
      */
@@ -23,13 +22,14 @@ public class Parser {
 
     // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
 
-    public Parser(Lexer lexer) {
+    public Parser(Lexer lexer, boolean strict) {
         this.lexer = lexer;
+        this.strict = strict;
         htmlElements = new Stack<>();
     }
 
     public void printStack() {
-        htmlElements.stream().forEach(System.out::println);
+        htmlElements.forEach(System.out::println);
     }
 
     public void parse() throws Exception {
@@ -38,11 +38,14 @@ public class Parser {
             parseElement();
         }
         // Check if every opening tag has its own closing tag
-        openingTag();
+        if (strict) {
+            closeTags();
+            checkClosings();
+        }
+
     }
 
-
-    public void parseElement() throws Exception {
+    private void parseElement() throws Exception {
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
                 // <
@@ -79,13 +82,10 @@ public class Parser {
     }
 
     private boolean textTypeSymbol(Symbol symbol) {
-        if (symbol.getType() == Symbol.SymbolType.beginStartTag
-            || symbol.getType() == Symbol.SymbolType.beginEndTag
-            || symbol.getType() == Symbol.SymbolType.beginComment
-            || symbol.getType() == Symbol.SymbolType.beginDoctype)
-            return false;
-
-        return true;
+        return symbol.getType() != Symbol.SymbolType.beginStartTag
+                && symbol.getType() != Symbol.SymbolType.beginEndTag
+                && symbol.getType() != Symbol.SymbolType.beginComment
+                && symbol.getType() != Symbol.SymbolType.beginDoctype;
     }
 
     private void parseDoctype() throws SyntaxErrorException, UnexpectedEOFException {
@@ -194,8 +194,6 @@ public class Parser {
         // Add tag to html elements stack
         pushStack(tag);
 
-        // Close corresponding opening tag
-        closeTag(tag);
 
         // Next symbol
         nextSymbol();
@@ -298,28 +296,37 @@ public class Parser {
         }
     }
 
-    private void openingTag() throws ClosingTagException {
+/*    private void checkOpeningTags() throws ClosingTagException {
         for (HtmlElement element : htmlElements) {
             if (element.getType() == HtmlElement.ElementType.tag && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening && !((HtmlTag)element).isClosed())
                 throw new ClosingTagException((HtmlTag)element, null, element.getPosition());
         }
-    }
+    }*/
 
-    private void closeTag(HtmlTag closingTag) throws ClosingTagException {
+    /*private void checkCloseTag(HtmlTag closingTag) throws ClosingTagException {
         // todo lepsza nazwa
-        // znajdz tag odpowiadajacy
+        *//* Dostalem juz closingTag, teraz musze znalezc odpowiadajacy mu openingTag.
+         * Lece po stosie i szukam HtmlTag ktory:
+         * 1. nie jest zamkniety
+         * 2. jest typu opening
+         *
+         * Jak juz go znajde, to sprawdzam jego name.
+         * Jesli jest rowny temu z closing tag, to git - oznaczam openingTag jako zamkniety.
+         * W p. p. rzucam wyjatek
+         * *//*
+
         HtmlTag openingTag = null;
 
         // todo bug:
         for (int i = htmlElements.size() - 1; i >= 0; i--) {
             HtmlElement element = htmlElements.get(i);
             if (element.getType() == HtmlElement.ElementType.tag && !((HtmlTag)element).isClosed() && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening) {
-                if (((HtmlTag)element).getName().equals(closingTag.getName())) {
+                if (((HtmlTag)element).getName().toLowerCase().equals(closingTag.getName().toLowerCase())) {
                     openingTag = (HtmlTag) element;
                     break;
                 } else {
-                    // zla kolejnosc tagow zamykajacych
-                    throw new ClosingTagException((HtmlTag) element, null, closingTag.getPosition());
+                    System.out.println("zla kolejnosc tagow zamykajacych");
+                    //throw new ClosingTagException((HtmlTag) element, null, closingTag.getPosition());
                 }
             }
         }
@@ -331,6 +338,54 @@ public class Parser {
             throw new ClosingTagException(null, closingTag, currentSymbol.getPosition());
         }
 
+    }*/
+
+    private void closeTags() throws ClosingTagException {
+        int index = 0;
+        for (HtmlElement element : htmlElements) {
+            if (element.getType() == HtmlElement.ElementType.tag) {
+                HtmlTag tag = (HtmlTag) element;
+                if (tag.getTagType() == HtmlTag.TagType.selfClosing) {
+                    tag.setClosed(true);
+                } else if (tag.getTagType() == HtmlTag.TagType.opening) {
+                    closeTag(tag, index);
+                }
+            }
+            index++;
+        }
+    }
+
+    private void closeTag(HtmlTag openingTag, int index) throws ClosingTagException {
+
+        for (int i = index + 1; i < htmlElements.size(); i++) {
+            if (htmlElements.get(i).getType() == HtmlElement.ElementType.tag) {
+                HtmlTag tag = (HtmlTag) htmlElements.get(i);
+                if (tag.getTagType() == HtmlTag.TagType.closing && tag.getName().toLowerCase().equals(openingTag.getName().toLowerCase())) {
+                    // znaleziono domkniecie
+                    openingTag.setClosed(true);
+                    tag.setClosed(true);
+                    break;
+                } else if (tag.getTagType() == HtmlTag.TagType.closing && tag.isClosed()) {
+                    // error
+                    throw new ClosingTagException(openingTag, null, openingTag.getPosition());
+                }
+            }
+        }
+    }
+
+    private void checkClosings() throws ClosingTagException {
+        for (HtmlElement element : htmlElements) {
+            if (element.getType() == HtmlElement.ElementType.tag) {
+                HtmlTag tag = (HtmlTag) element;
+                if (!tag.isClosed()) {
+                    if (tag.getTagType() == HtmlTag.TagType.closing)
+                        throw new ClosingTagException(null, tag, tag.getPosition());
+                    else
+                        throw new ClosingTagException(tag, null, tag.getPosition());
+                }
+
+            }
+        }
     }
 
     private String parseDoubleQuoted() throws UnexpectedEOFException {
@@ -352,8 +407,44 @@ public class Parser {
         return value.toString();
     }
 
-    private void skipScript(HtmlTag tag){
+    private void skipScript(HtmlTag tag) throws SyntaxErrorException, ClosingTagException {
+        // find </script>
+        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script")) {
+            // skip content
 
+            System.out.println("Skipping script starting at " + currentSymbol);
+
+
+            while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
+                // keep looking for </script>
+                if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+                    //System.out.println("found " + currentSymbol);
+                    nextSymbol();
+                    if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("script")) {
+                        //System.out.println("found " + currentSymbol);
+                        // </script
+                        // na pewno koniec JSa, teraz trzeba zajac sie do konca tagiem
+                        nextSymbol();
+                        if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                            // </script> ok
+                            HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, currentSymbol.getPosition());
+                            pushStack(endTag);
+                            nextSymbol();
+                        } else {
+                            LinkedList<String> expected = new LinkedList<>();
+                            expected.add(">");
+                            throw new SyntaxErrorException(expected, currentSymbol);
+                        }
+                        break;
+                    } else {
+                        nextSymbol();
+                    }
+                } else {
+                    nextSymbol();
+                }
+            }
+            System.out.println("Skipped to " + currentSymbol.getPosition());
+        }
     }
 
 
