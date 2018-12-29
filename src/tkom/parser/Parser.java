@@ -289,6 +289,8 @@ public class Parser {
             } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
                 // single quoted attr value
                 List<String> values = parseQuoted(Symbol.SymbolType.singleQuote);
+                if (values.size() == 0)
+                    tag.addAttribute(attrName, "", Attribute.AttributeType.singleQuoted);
                 for (String v : values) {
                     tag.addAttribute(attrName, v, Attribute.AttributeType.singleQuoted);
                 }
@@ -302,6 +304,8 @@ public class Parser {
                 // double quoted attribute value
                 //nextSymbol();
                 List<String> values = parseQuoted(Symbol.SymbolType.doubleQuote);
+                if (values.size() == 0)
+                    tag.addAttribute(attrName, "", Attribute.AttributeType.doubleQuoted);
                 for (String v : values) {
                     tag.addAttribute(attrName, v, Attribute.AttributeType.doubleQuoted);
                 }
