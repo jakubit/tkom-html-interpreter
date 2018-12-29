@@ -414,10 +414,15 @@ public class Parser {
                 toReturn.add(stringBuilder.toString());
             }
 
-            if (areConcatenated(symbols.get(symbols.size() - 2), symbols.get(symbols.size() - 1)))
-                symbols.get(symbols.size() - 2).getValue().concat(symbols.get(symbols.size() - 1).getValue());
-            else
-                toReturn.add(symbols.get(symbols.size() - 1).getValue());
+            if (symbols.size() > 1){
+                if (areConcatenated(symbols.get(symbols.size() - 2), symbols.get(symbols.size() - 1)))
+                    symbols.get(symbols.size() - 2).getValue().concat(symbols.get(symbols.size() - 1).getValue());
+                else
+                    toReturn.add(symbols.get(symbols.size() - 1).getValue());
+            } else {
+                toReturn.add(symbols.get(0).getValue());
+            }
+
         }
 
         return toReturn;
