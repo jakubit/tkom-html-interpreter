@@ -25,6 +25,8 @@ public class Parser {
 
     // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
 
+    // todo: bug parsowania komentarza: <!--> to robi <!-- >
+
     public Parser(Lexer lexer, boolean strict) {
         this.lexer = lexer;
         this.strict = strict;
@@ -179,14 +181,24 @@ public class Parser {
         nextSymbol();
     }
 
-    private void parseComment() {
-        nextSymbol();
+    private void parseComment() throws UnexpectedEOFException {
         StringBuilder value = new StringBuilder("");
-        while (currentSymbol.getType() != Symbol.SymbolType.finishComment) {
-            value.append(currentSymbol.getValue());
-            value.append(" ");
-            nextSymbol();
+        Symbol lastSymbol = currentSymbol;
+        nextSymbol();
+
+        if (currentSymbol.getType() != Symbol.SymbolType.finishTag || !areConcatenated(lastSymbol, currentSymbol)) {
+            // <!--content>
+
+            // read content
+            while (currentSymbol.getType() != Symbol.SymbolType.finishComment && currentSymbol.getType() != Symbol.SymbolType.EOF) {
+                value.append(currentSymbol.getValue());
+                value.append(" ");
+                nextSymbol();
+            }
+            if (currentSymbol.getType() == Symbol.SymbolType.EOF)
+                throw new UnexpectedEOFException("-->", currentSymbol.getPosition());
         }
+
         pushStack(new HtmlElement(HtmlElement.ElementType.comment, value.toString(), currentSymbol.getPosition()));
         nextSymbol();
     }
