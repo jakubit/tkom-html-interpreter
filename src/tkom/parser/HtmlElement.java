@@ -45,7 +45,10 @@ public class HtmlElement {
     @Override
     public String toString() {
         if (type == ElementType.comment) {
-            return "<!--" + content + "-->";
+            if (content.equals(""))
+                return "<!-->";
+            else
+                return "<!--" + content + "-->";
         } else if (type == ElementType.text) {
             return content;
         } else if (type == ElementType.doctype) {
