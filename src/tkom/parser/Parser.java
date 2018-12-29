@@ -21,6 +21,7 @@ public class Parser {
      * # nie parsuj zawartosci tagu <script></script>
      */
 
+    // todo: sprawdzic jak sie zachowa gdy trafi na unexpected EOF w kazdym przypadku parsowania
 
     // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
 
@@ -195,7 +196,7 @@ public class Parser {
         nextSymbol();
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
             // tag name
-            tag.setName(currentSymbol.getValue());
+            tag.setName(parseName());
         } else {
             System.out.println("ERROR: In parseClosingTag (1)");
             LinkedList<String> expected = new LinkedList<>();
@@ -203,7 +204,7 @@ public class Parser {
             throw new SyntaxErrorException(expected, currentSymbol);
         }
 
-        nextSymbol();
+        //nextSymbol();
         if(currentSymbol.getType() == Symbol.SymbolType.finishTag) {
             tag.setType(HtmlTag.TagType.closing);
         } else {
@@ -230,13 +231,13 @@ public class Parser {
 
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
             // znaleziono nazwe tagu, teraz mam <tagName
-            tag.setName(currentSymbol.getValue());
+            tag.setName(parseName());
         } else {
             parseTextStartingWith("<");
             return;
         }
 
-        nextSymbol();
+        //nextSymbol();
 
         // jesli jest data, to na pewno jest to atrybut, przeparsuj je
         if (currentSymbol.getType() == Symbol.SymbolType.data)
@@ -277,22 +278,23 @@ public class Parser {
         // parse one attribute
 
         // name, mam na pewno <tagName attrName
-        String attrName = currentSymbol.getValue();
+        // todo parsowac nazwe az do
+        String attrName = parseName();
 
-        nextSymbol();
+        //nextSymbol();
         if (currentSymbol.getType() == Symbol.SymbolType.attrributeAssing) {
             // <tagName attrName=
             nextSymbol();
             if (currentSymbol.getType() == Symbol.SymbolType.data || currentSymbol.getType() == Symbol.SymbolType.numeric) {
                 // unquoted attr value
-                tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.unquoted);
+                tag.addAttribute(attrName.toString(), currentSymbol.getValue(), Attribute.AttributeType.unquoted);
             } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
                 // single quoted attr value
                 List<String> values = parseQuoted(Symbol.SymbolType.singleQuote);
                 if (values.size() == 0)
-                    tag.addAttribute(attrName, "", Attribute.AttributeType.singleQuoted);
+                    tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.singleQuoted);
                 for (String v : values) {
-                    tag.addAttribute(attrName, v, Attribute.AttributeType.singleQuoted);
+                    tag.addAttribute(attrName.toString(), v, Attribute.AttributeType.singleQuoted);
                 }
 
                 /*nextSymbol();
@@ -305,9 +307,9 @@ public class Parser {
                 //nextSymbol();
                 List<String> values = parseQuoted(Symbol.SymbolType.doubleQuote);
                 if (values.size() == 0)
-                    tag.addAttribute(attrName, "", Attribute.AttributeType.doubleQuoted);
+                    tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.doubleQuoted);
                 for (String v : values) {
-                    tag.addAttribute(attrName, v, Attribute.AttributeType.doubleQuoted);
+                    tag.addAttribute(attrName.toString(), v, Attribute.AttributeType.doubleQuoted);
                 }
 
                 /*while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
@@ -329,7 +331,7 @@ public class Parser {
         } else {
             // no value attribute
             //System.out.println("No value attr\n");
-            tag.addAttribute(attrName, "", Attribute.AttributeType.noValue);
+            tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.noValue);
         }
     }
 
@@ -386,6 +388,21 @@ public class Parser {
                 }
             }
         }
+    }
+
+    private String parseName() {
+        StringBuilder name = new StringBuilder(currentSymbol.getValue());
+
+        // dopoki kolejne symbole sa skonkatenowane i rozne od [=, />, >, EOF] to wczytuj nazwe atrybutu
+        Symbol lastSymbol = currentSymbol;
+        nextSymbol();
+        while (areConcatenated(lastSymbol, currentSymbol) && currentSymbol.getType() != Symbol.SymbolType.attrributeAssing && currentSymbol.getType() != Symbol.SymbolType.finishSelfClosingTag && currentSymbol.getType() != Symbol.SymbolType.finishTag && currentSymbol.getType() != Symbol.SymbolType.EOF) {
+            name.append(currentSymbol.getValue());
+            lastSymbol = currentSymbol;
+            nextSymbol();
+        }
+
+        return name.toString();
     }
 
     private List<String> parseQuoted(Symbol.SymbolType quoted) throws UnexpectedEOFException {
