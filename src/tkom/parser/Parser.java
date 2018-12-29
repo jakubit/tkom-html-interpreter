@@ -287,15 +287,17 @@ public class Parser {
             nextSymbol();
             if (currentSymbol.getType() == Symbol.SymbolType.data || currentSymbol.getType() == Symbol.SymbolType.numeric) {
                 // unquoted attr value
-                tag.addAttribute(attrName.toString(), currentSymbol.getValue(), Attribute.AttributeType.unquoted);
+                tag.addAttribute(attrName, parseName(), Attribute.AttributeType.unquoted);
             } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
                 // single quoted attr value
                 List<String> values = parseQuoted(Symbol.SymbolType.singleQuote);
                 if (values.size() == 0)
-                    tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.singleQuoted);
+                    tag.addAttribute(attrName, "", Attribute.AttributeType.singleQuoted);
                 for (String v : values) {
-                    tag.addAttribute(attrName.toString(), v, Attribute.AttributeType.singleQuoted);
+                    tag.addAttribute(attrName, v, Attribute.AttributeType.singleQuoted);
                 }
+
+                nextSymbol();
 
                 /*nextSymbol();
                 while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
@@ -307,10 +309,12 @@ public class Parser {
                 //nextSymbol();
                 List<String> values = parseQuoted(Symbol.SymbolType.doubleQuote);
                 if (values.size() == 0)
-                    tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.doubleQuoted);
+                    tag.addAttribute(attrName, "", Attribute.AttributeType.doubleQuoted);
                 for (String v : values) {
-                    tag.addAttribute(attrName.toString(), v, Attribute.AttributeType.doubleQuoted);
+                    tag.addAttribute(attrName, v, Attribute.AttributeType.doubleQuoted);
                 }
+
+                nextSymbol();
 
                 /*while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
                     tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.doubleQuoted);
@@ -327,7 +331,7 @@ public class Parser {
                 throw new SyntaxErrorException(expected, currentSymbol);
             }
 
-            nextSymbol();
+            //
         } else {
             // no value attribute
             //System.out.println("No value attr\n");
