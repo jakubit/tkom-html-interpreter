@@ -2,8 +2,10 @@ package tkom.parser;
 
 import tkom.lexer.Lexer;
 import tkom.lexer.Symbol;
+import tkom.source.TextPosition;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
 
 public class Parser {
@@ -118,12 +120,34 @@ public class Parser {
                     value.append(currentSymbol.getValue());
                     nextSymbol();
                     if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
-                        value.append(" ");
-                        value.append(parseDoubleQuoted());
+                        value.append(" \"");
+
+                        List<String> link = parseQuoted(Symbol.SymbolType.doubleQuote);
+                        for (String s : link) {
+                            value.append(s);
+                            value.append(" ");
+                        }
+                        if (link.size() > 0) {
+                            int index = value.lastIndexOf(" ");
+                            //if (index > 0)
+                                value.deleteCharAt(index);
+                        }
+                        value.append("\"");
+
                         nextSymbol();
                         if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
-                            value.append(" ");
-                            value.append(parseDoubleQuoted());
+                            value.append(" \"");
+
+                            for (String s : parseQuoted(Symbol.SymbolType.doubleQuote)) {
+                                value.append(s);
+                                value.append(" ");
+                            }
+                            if (link.size() > 0) {
+                                int index = value.lastIndexOf(" ");
+                                //if (index > 0)
+                                    value.deleteCharAt(index);
+                            }
+                            value.append("\"");
                             nextSymbol();
                             if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
                                 // <!doctype html public "link1" "link2"> HTML 4 and lower ok
@@ -165,7 +189,6 @@ public class Parser {
         pushStack(new HtmlElement(HtmlElement.ElementType.comment, value.toString(), currentSymbol.getPosition()));
         nextSymbol();
     }
-
 
     private void parseClosingTag() throws SyntaxErrorException, ClosingTagException {
         HtmlTag tag = new HtmlTag(currentSymbol.getPosition());
@@ -265,18 +288,28 @@ public class Parser {
                 tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.unquoted);
             } else if (currentSymbol.getType() == Symbol.SymbolType.singleQuote) {
                 // single quoted attr value
-                nextSymbol();
+                List<String> values = parseQuoted(Symbol.SymbolType.singleQuote);
+                for (String v : values) {
+                    tag.addAttribute(attrName, v, Attribute.AttributeType.singleQuoted);
+                }
+
+                /*nextSymbol();
                 while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
                     tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.singleQuoted);
                     nextSymbol();
-                }
+                }*/
             } else if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
                 // double quoted attribute value
-                nextSymbol();
-                while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
+                //nextSymbol();
+                List<String> values = parseQuoted(Symbol.SymbolType.doubleQuote);
+                for (String v : values) {
+                    tag.addAttribute(attrName, v, Attribute.AttributeType.doubleQuoted);
+                }
+
+                /*while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
                     tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.doubleQuoted);
                     nextSymbol();
-                }
+                }*/
             } else {
                 System.out.println("ERROR: In parseAttribute");
 
@@ -295,50 +328,6 @@ public class Parser {
             tag.addAttribute(attrName, "", Attribute.AttributeType.noValue);
         }
     }
-
-/*    private void checkOpeningTags() throws ClosingTagException {
-        for (HtmlElement element : htmlElements) {
-            if (element.getType() == HtmlElement.ElementType.tag && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening && !((HtmlTag)element).isClosed())
-                throw new ClosingTagException((HtmlTag)element, null, element.getPosition());
-        }
-    }*/
-
-    /*private void checkCloseTag(HtmlTag closingTag) throws ClosingTagException {
-        // todo lepsza nazwa
-        *//* Dostalem juz closingTag, teraz musze znalezc odpowiadajacy mu openingTag.
-         * Lece po stosie i szukam HtmlTag ktory:
-         * 1. nie jest zamkniety
-         * 2. jest typu opening
-         *
-         * Jak juz go znajde, to sprawdzam jego name.
-         * Jesli jest rowny temu z closing tag, to git - oznaczam openingTag jako zamkniety.
-         * W p. p. rzucam wyjatek
-         * *//*
-
-        HtmlTag openingTag = null;
-
-        // todo bug:
-        for (int i = htmlElements.size() - 1; i >= 0; i--) {
-            HtmlElement element = htmlElements.get(i);
-            if (element.getType() == HtmlElement.ElementType.tag && !((HtmlTag)element).isClosed() && ((HtmlTag)element).getTagType() == HtmlTag.TagType.opening) {
-                if (((HtmlTag)element).getName().toLowerCase().equals(closingTag.getName().toLowerCase())) {
-                    openingTag = (HtmlTag) element;
-                    break;
-                } else {
-                    System.out.println("zla kolejnosc tagow zamykajacych");
-                    //throw new ClosingTagException((HtmlTag) element, null, closingTag.getPosition());
-                }
-            }
-        }
-
-        if (openingTag != null) {
-            openingTag.setClosed(true);
-            closingTag.setClosed(true);
-        } else {
-            throw new ClosingTagException(null, closingTag, currentSymbol.getPosition());
-        }
-
-    }*/
 
     private void closeTags() throws ClosingTagException {
         int index = 0;
@@ -395,12 +384,13 @@ public class Parser {
         }
     }
 
-    private String parseDoubleQuoted() throws UnexpectedEOFException {
-        StringBuilder value = new StringBuilder("\"");
+    private List<String> parseQuoted(Symbol.SymbolType quoted) throws UnexpectedEOFException {
+        List<String> toReturn = new LinkedList<>();
 
         nextSymbol();
-        while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote && currentSymbol.getType() != Symbol.SymbolType.EOF) {
-            value.append(currentSymbol.getValue());
+        List<Symbol> symbols = new LinkedList<>();
+        while (currentSymbol.getType() != quoted && currentSymbol.getType() != Symbol.SymbolType.EOF) {
+            symbols.add(currentSymbol);
             nextSymbol();
         }
 
@@ -409,9 +399,31 @@ public class Parser {
             throw new UnexpectedEOFException("\"", currentSymbol.getPosition());
         }
 
-        value.append(currentSymbol.getValue());
+        // Bulid value from List
+        if (symbols.size() > 0) {
+            for (int i = 1; i < symbols.size(); i++) {
+                StringBuilder stringBuilder = new StringBuilder(symbols.get(i-1).getValue());
+                while (i < symbols.size() && areConcatenated(symbols.get(i - 1), symbols.get(i))) {
+                    stringBuilder.append(symbols.get(i).getValue());
+                    i++;
+                }
+                toReturn.add(stringBuilder.toString());
+            }
 
-        return value.toString();
+            if (areConcatenated(symbols.get(symbols.size() - 2), symbols.get(symbols.size() - 1)))
+                symbols.get(symbols.size() - 2).getValue().concat(symbols.get(symbols.size() - 1).getValue());
+            else
+                toReturn.add(symbols.get(symbols.size() - 1).getValue());
+        }
+
+        return toReturn;
+    }
+
+    private boolean areConcatenated(Symbol first, Symbol second) {
+        if (first.getPosition().getCharIndex() + first.getValue().length() == second.getPosition().getCharIndex())
+            return true;
+
+        return false;
     }
 
     private void skipScript(HtmlTag tag) throws SyntaxErrorException, ClosingTagException {
@@ -419,13 +431,14 @@ public class Parser {
         if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script")) {
             // skip content
 
-            System.out.println("Skipping script starting at " + currentSymbol);
+            //System.out.println("Skipping script starting at " + currentSymbol);
 
 
             while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
                 // keep looking for </script>
                 if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                     //System.out.println("found " + currentSymbol);
+                    TextPosition position = currentSymbol.getPosition();
                     nextSymbol();
                     if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("script")) {
                         //System.out.println("found " + currentSymbol);
@@ -434,7 +447,8 @@ public class Parser {
                         nextSymbol();
                         if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
                             // </script> ok
-                            HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, currentSymbol.getPosition());
+                            HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, position);
+                            //System.out.println("Skipped to " + endTag.getPosition());
                             pushStack(endTag);
                             nextSymbol();
                         } else {
@@ -450,16 +464,14 @@ public class Parser {
                     nextSymbol();
                 }
             }
-            System.out.println("Skipped to " + currentSymbol.getPosition());
+
         }
     }
-
 
     private void pushStack(HtmlElement element) {
         //System.out.println(element);
         htmlElements.push(element);
     }
-
 
     private void nextSymbol() {
         currentSymbol = lexer.nextSymbol();
