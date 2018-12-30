@@ -187,10 +187,21 @@ public class Parser {
         nextSymbol();
 
         if (currentSymbol.getType() != Symbol.SymbolType.finishTag || !areConcatenated(lastSymbol, currentSymbol)) {
-            // <!--content>
+            // <!--content -->
 
             // read content
             while (currentSymbol.getType() != Symbol.SymbolType.finishComment && currentSymbol.getType() != Symbol.SymbolType.EOF) {
+                if (currentSymbol.getType() == Symbol.SymbolType.beginComment) {
+                    lastSymbol = currentSymbol;
+                    nextSymbol();
+                    if (currentSymbol.getType() == Symbol.SymbolType.finishTag && areConcatenated(lastSymbol, currentSymbol)) {
+                        // trafiono na <!--> koniec czytania komentarza
+                        value.append(lastSymbol.getValue());
+                        break;
+                    } else if (currentSymbol.getType() ==  Symbol.SymbolType.EOF)
+                        throw new UnexpectedEOFException(">", currentSymbol.getPosition());
+                }
+
                 value.append(currentSymbol.getValue());
                 value.append(" ");
                 nextSymbol();
