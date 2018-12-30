@@ -23,14 +23,12 @@ public class Lexer implements ILexer {
         * TODO
         * 1. Ogarnac max value zeby rzucalo jakims wyjatkiem czy cos
         * 2. Ogarnac token error - chyba trzeba zamienic to na rzucanie wyjatkiem i lapanie w parserze
-        * 3. Ogarnac lexer - nie moze rozbijac nazw...
+        * 3. Ogarnac lexer - nie moze rozbijac nazw... Mozna ale potem w parserze trzeba je laczyc
         * */
 
 
         /*
          * TODO
-         * 1. POZBYC SIE GET/UNGET CHAR POPRZEZ PRZESUWANIE ZNAKU DOPIERO PO ROZPOZNANIU TOKENU  done
-         * 2. TOKEN NA ERRORY done
          * 3. AUTOMAT DLA --> W KOMENTARZU
          * 4. komentarze
          */
@@ -110,7 +108,7 @@ public class Lexer implements ILexer {
 
 
         // Other, e.g. ;, :, *
-        Symbol sym = new Symbol(Symbol.SymbolType.other, String.valueOf(source.getCurrentChar()), textPosition);
+        Symbol sym = new Symbol(Symbol.SymbolType.data, String.valueOf(source.getCurrentChar()), textPosition);
         source.nextChar();
         return sym;
     }
@@ -255,9 +253,6 @@ public class Lexer implements ILexer {
         while (length < MAX_LENGTH && !Character.isWhitespace(source.getCurrentChar()) && characterAllowedInName(source.getCurrentChar())) {
             //source.mark();
 
-            // todo tresc komentarza jest pomijana gdy skleja sie z symbolem finishComment
-            if (source.getCurrentChar() == '-')
-                return dashOrFinishComment(source.getTextPosition());
 
                 value.append(String.valueOf(source.getCurrentChar()));
                 source.nextChar();
@@ -276,6 +271,7 @@ public class Lexer implements ILexer {
             case '\'':
             case '\"':
             case '<':
+            case '-':
             case '&': return false;
         }
 
