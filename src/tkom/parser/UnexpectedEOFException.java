@@ -16,9 +16,10 @@ public class UnexpectedEOFException extends Exception {
         StringBuilder string = new StringBuilder();
         string.append("UNEXPECTED END OF FILE! ");
         string.append(position);
-        string.append(" Expected: ");
-        string.append(expected);
-
+        if (!expected.equals("")) {
+            string.append(" Expected: ");
+            string.append(expected);
+        }
         return string.toString();
     }
 }
