@@ -39,9 +39,7 @@ public class HtmlTag extends HtmlElement {
         this.type = type;
     }
 
-
-
-    public void addAttribute(String name, String value, Attribute.AttributeType type) throws Exception {
+    public void addAttribute(String name, String value, Attribute.AttributeType type) {
         Attribute attribute = null;
         for(Attribute a : attributes) {
             if (a.getName().equals(name) && a.getType() == type) {

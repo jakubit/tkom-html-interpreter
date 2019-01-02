@@ -9,10 +9,12 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Source s = new Source("resources/config.html");
+        boolean strict = false;
+
+        Source s = new Source("resources/interia.html");
         s.open();
         Lexer l = new Lexer(s);
-        Parser p = new Parser(l);
+        Parser p = new Parser(l, strict);
 
 
         try {
@@ -23,13 +25,13 @@ public class Main {
         }
         p.printStack();
 
-        /*
-        Symbol symbol;
+
+        /*Symbol symbol;
 
         do {
             symbol = l.nextSymbol();
             System.out.println(symbol);
-        } while (symbol.getType() != Symbol.SymbolType.EOF);
-        */
+        } while (symbol.getType() != Symbol.SymbolType.EOF);*/
+
     }
 }

@@ -16,16 +16,12 @@ public class Lexer implements ILexer {
     }
 
     public Symbol nextSymbol() {
-
-
-
         /*
         * TODO
         * 1. Ogarnac max value zeby rzucalo jakims wyjatkiem czy cos
         * 2. Ogarnac token error - chyba trzeba zamienic to na rzucanie wyjatkiem i lapanie w parserze
         * 3. Ogarnac lexer - nie moze rozbijac nazw... Mozna ale potem w parserze trzeba je laczyc
         * */
-
 
         /*
          * TODO

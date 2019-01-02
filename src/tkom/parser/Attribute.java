@@ -20,7 +20,7 @@ public class Attribute {
         this.type = type;
     }
 
-    public void addValue(String value) throws Exception {
+    public void addValue(String value) {
         if (values == null)
             values = new LinkedList<>();
 
