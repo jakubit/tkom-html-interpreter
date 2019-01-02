@@ -1,7 +1,7 @@
-package tkom.lexer;
+package tkom.model.lexer;
 
-import tkom.source.TextPosition;
-import tkom.source.Source;
+import tkom.model.source.TextPosition;
+import tkom.model.source.Source;
 
 public class Lexer implements ILexer {
 

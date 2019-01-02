@@ -1,6 +1,6 @@
-package tkom.lexer;
+package tkom.model.lexer;
 
-import tkom.source.TextPosition;
+import tkom.model.source.TextPosition;
 
 public class Symbol {
 
