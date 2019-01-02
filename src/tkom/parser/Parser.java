@@ -15,17 +15,9 @@ public class Parser {
     private boolean strict;
 
     /* TODO: KNOWN BUGS:
-     * # ingoruje atrybuty doubleQuoted z pusta wartoscia
-     * # problem parsowaniem komentarza! nie znajduje --> jesli cos przed nim stoi bez spacji
-     * # problem z whitespaceami - dodaje je na rympal
-     * # nie parsuj zawartosci tagu <script></script>
      */
 
     // todo: sprawdzic jak sie zachowa gdy trafi na unexpected EOF w kazdym przypadku parsowania
-
-    // todo: sprawdzac zamkniecia tagow - kolejnosc zamykania ma zanczenie
-
-    // todo: bug parsowania komentarza: <!--> to robi <!-- >
 
     public Parser(Lexer lexer, boolean strict) {
         this.lexer = lexer;
@@ -33,23 +25,27 @@ public class Parser {
         htmlElements = new Stack<>();
     }
 
-    public void printStack() {
-        htmlElements.forEach(System.out::println);
-    }
-
+    /**
+     * Starts parsing process. Calls {@link #parseElement()} until EOF token occurs.
+     * @throws Exception
+     */
     public void parse() throws Exception {
         nextSymbol();
         while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
             parseElement();
         }
+
         // Check if every opening tag has its own closing tag
         if (strict) {
             closeTags();
             checkClosings();
         }
-
     }
 
+    /**
+     * Parses one HTML Element
+     * @throws Exception
+     */
     private void parseElement() throws Exception {
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
@@ -70,14 +66,26 @@ public class Parser {
 
     }
 
-    private void parseText() {
+    /**
+     * Parses plain text
+     * @throws UnexpectedEOFException when finds EOF token
+     */
+    private void parseText() throws UnexpectedEOFException {
         parseTextStartingWith("");
     }
 
-    private void parseTextStartingWith(String text) {
+    /**
+     * Parses plain text starting with given string
+     * @param text starting string
+     * @throws UnexpectedEOFException when finds EOF token
+     */
+    private void parseTextStartingWith(String text) throws UnexpectedEOFException {
         // caly tekst pomiedzy znacznikami
         StringBuilder value = new StringBuilder(text);
         while (textTypeSymbol(currentSymbol)) {
+            if (currentSymbol.getType() == Symbol.SymbolType.EOF)
+                throw new UnexpectedEOFException("", currentSymbol.getPosition());
+
             value.append(currentSymbol.getValue());
             value.append(" ");
             nextSymbol();
@@ -86,13 +94,24 @@ public class Parser {
         pushStack(new HtmlElement(HtmlElement.ElementType.text, value.toString(), currentSymbol.getPosition()));
     }
 
+    /**
+     * Checks if given symbol is allowed to be in plain text
+     * @param symbol lexical symbol
+     * @return true if given symbol is allowed to be in plain text, otherwise false
+     */
     private boolean textTypeSymbol(Symbol symbol) {
-        return symbol.getType() != Symbol.SymbolType.beginStartTag
-                && symbol.getType() != Symbol.SymbolType.beginEndTag
-                && symbol.getType() != Symbol.SymbolType.beginComment
-                && symbol.getType() != Symbol.SymbolType.beginDoctype;
+        Symbol.SymbolType type = symbol.getType();
+        return type != Symbol.SymbolType.beginStartTag
+                && type != Symbol.SymbolType.beginEndTag
+                && type != Symbol.SymbolType.beginComment
+                && type != Symbol.SymbolType.beginDoctype;
     }
 
+    /**
+     * Parses doctype tag
+     * @throws SyntaxErrorException when syntax error occurs
+     * @throws UnexpectedEOFException when finds EOF token
+     */
     private void parseDoctype() throws SyntaxErrorException, UnexpectedEOFException {
         nextSymbol();
         StringBuilder value = new StringBuilder();
@@ -173,7 +192,8 @@ public class Parser {
                     }
                 } else {
                     LinkedList<String> expected = new LinkedList<>();
-                    expected.add("public");
+                    expected.add("> (in HTML 5)");
+                    expected.add("public (in HTML 4 and lower)");
                     throw new SyntaxErrorException(expected, currentSymbol);
                 }
             }
@@ -181,6 +201,10 @@ public class Parser {
         nextSymbol();
     }
 
+    /**
+     * Parses comment tag
+     * @throws UnexpectedEOFException when when finds EOF token
+     */
     private void parseComment() throws UnexpectedEOFException {
         StringBuilder value = new StringBuilder("");
         Symbol lastSymbol = currentSymbol;
@@ -214,14 +238,17 @@ public class Parser {
         nextSymbol();
     }
 
-    private void parseClosingTag() throws SyntaxErrorException, ClosingTagException {
+    /**
+     * Parses closing tag
+     * @throws SyntaxErrorException when tag name is missing or tag is closed improperly
+     */
+    private void parseClosingTag() throws SyntaxErrorException {
         HtmlTag tag = new HtmlTag(currentSymbol.getPosition());
         nextSymbol();
         if (currentSymbol.getType() == Symbol.SymbolType.data) {
             // tag name
             tag.setName(parseName());
         } else {
-            System.out.println("ERROR: In parseClosingTag (1)");
             LinkedList<String> expected = new LinkedList<>();
             expected.add("tagName");
             throw new SyntaxErrorException(expected, currentSymbol);
@@ -232,7 +259,6 @@ public class Parser {
             tag.setType(HtmlTag.TagType.closing);
         } else {
             // niepoprawne zamkniecie closingTagu
-            System.out.println("ERROR: In parseClosingTag (2)");
             LinkedList<String> expected = new LinkedList<>();
             expected.add(">");
             throw new SyntaxErrorException(expected, currentSymbol);
@@ -241,12 +267,16 @@ public class Parser {
         // Add tag to html elements stack
         pushStack(tag);
 
-
         // Next symbol
         nextSymbol();
     }
 
-    private void parseOpeningTag() throws SyntaxErrorException, Exception {
+    /**
+     * Parses opening tag
+     * @throws SyntaxErrorException when tag is closed improperly
+     * @throws UnexpectedEOFException when finds EOF token
+     */
+    private void parseOpeningTag() throws SyntaxErrorException, UnexpectedEOFException {
         // teraz mam tylko <
 
         nextSymbol();
@@ -287,21 +317,33 @@ public class Parser {
         nextSymbol();
 
         // If <script> then skip content
-        skipScript(tag);
+        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script"))
+            skipScript(tag);
     }
 
-    private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, Exception {
+    /**
+     * Parses tag's attributes. Calls {@link #parseAttribute(HtmlTag)} until there are attributes to be parsed.
+     * @param tag tag which attributes will be parsed
+     * @throws SyntaxErrorException
+     * @throws UnexpectedEOFException
+     */
+    private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, UnexpectedEOFException {
         while (currentSymbol.getType() == Symbol.SymbolType.data) {
             parseAttribute(tag);
             //nextSymbol();
         }
     }
 
-    private void parseAttribute(HtmlTag tag) throws SyntaxErrorException, Exception {
+    /**
+     * Parses one attribute.
+     * @param tag tag which attributes will be parsed
+     * @throws SyntaxErrorException
+     * @throws UnexpectedEOFException
+     */
+    private void parseAttribute(HtmlTag tag) throws SyntaxErrorException, UnexpectedEOFException {
         // parse one attribute
 
         // name, mam na pewno <tagName attrName
-        // todo parsowac nazwe az do
         String attrName = parseName();
 
         //nextSymbol();
@@ -316,52 +358,38 @@ public class Parser {
                 List<String> values = parseQuoted(Symbol.SymbolType.singleQuote);
                 if (values.size() == 0)
                     tag.addAttribute(attrName, "", Attribute.AttributeType.singleQuoted);
-                for (String v : values) {
+                for (String v : values)
                     tag.addAttribute(attrName, v, Attribute.AttributeType.singleQuoted);
-                }
 
                 nextSymbol();
-
-                /*nextSymbol();
-                while (currentSymbol.getType() != Symbol.SymbolType.singleQuote) {
-                    tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.singleQuoted);
-                    nextSymbol();
-                }*/
             } else if (currentSymbol.getType() == Symbol.SymbolType.doubleQuote) {
                 // double quoted attribute value
                 //nextSymbol();
                 List<String> values = parseQuoted(Symbol.SymbolType.doubleQuote);
                 if (values.size() == 0)
                     tag.addAttribute(attrName, "", Attribute.AttributeType.doubleQuoted);
-                for (String v : values) {
+                for (String v : values)
                     tag.addAttribute(attrName, v, Attribute.AttributeType.doubleQuoted);
-                }
 
                 nextSymbol();
-
-                /*while (currentSymbol.getType() != Symbol.SymbolType.doubleQuote) {
-                    tag.addAttribute(attrName, currentSymbol.getValue(), Attribute.AttributeType.doubleQuoted);
-                    nextSymbol();
-                }*/
             } else {
-                System.out.println("ERROR: In parseAttribute");
-
                 LinkedList<String> expected = new LinkedList<>();
                 expected.add("value");
                 expected.add("'");
                 expected.add("\"");
-
                 throw new SyntaxErrorException(expected, currentSymbol);
             }
 
-            //
         } else {
             // no value attribute
-            //System.out.println("No value attr\n");
             tag.addAttribute(attrName.toString(), "", Attribute.AttributeType.noValue);
         }
     }
 
+    /**
+     * Marks matching tags as closed. Self closing tags are being marked as closed by default. Opening tags are being marked as closed with {@link #closeTag(HtmlTag, int)} method.
+     * @throws ClosingTagException
+     */
     private void closeTags() throws ClosingTagException {
         int index = 0;
         for (HtmlElement element : htmlElements) {
@@ -377,6 +405,12 @@ public class Parser {
         }
     }
 
+    /**
+     * Looks up for closing tag for given tag starting at given index.
+     * @param openingTag
+     * @param index
+     * @throws ClosingTagException when matching closing tag wasn't found
+     */
     private void closeTag(HtmlTag openingTag, int index) throws ClosingTagException {
         int nested = 0;
         for (int i = index + 1; i < htmlElements.size(); i++) {
@@ -403,6 +437,10 @@ public class Parser {
         }
     }
 
+    /**
+     * Check if every tag is closed properly.
+     * @throws ClosingTagException
+     */
     private void checkClosings() throws ClosingTagException {
         for (HtmlElement element : htmlElements) {
             if (element.getType() == HtmlElement.ElementType.tag) {
@@ -417,13 +455,21 @@ public class Parser {
         }
     }
 
+    /**
+     * Parses consecutive tokens as name, until =, />, >, EOF token occurs.
+     * @return parsed name
+     */
     private String parseName() {
         StringBuilder name = new StringBuilder(currentSymbol.getValue());
 
         // dopoki kolejne symbole sa skonkatenowane i rozne od [=, />, >, EOF] to wczytuj nazwe atrybutu
         Symbol lastSymbol = currentSymbol;
         nextSymbol();
-        while (areConcatenated(lastSymbol, currentSymbol) && currentSymbol.getType() != Symbol.SymbolType.attrributeAssing && currentSymbol.getType() != Symbol.SymbolType.finishSelfClosingTag && currentSymbol.getType() != Symbol.SymbolType.finishTag && currentSymbol.getType() != Symbol.SymbolType.EOF) {
+        while (areConcatenated(lastSymbol, currentSymbol)
+                && currentSymbol.getType() != Symbol.SymbolType.attrributeAssing
+                && currentSymbol.getType() != Symbol.SymbolType.finishSelfClosingTag
+                && currentSymbol.getType() != Symbol.SymbolType.finishTag
+                && currentSymbol.getType() != Symbol.SymbolType.EOF) {
             name.append(currentSymbol.getValue());
             lastSymbol = currentSymbol;
             nextSymbol();
@@ -432,6 +478,12 @@ public class Parser {
         return name.toString();
     }
 
+    /**
+     * Parses consecutive tokens between double or single quote.
+     * @param quoted type of quote: single or double
+     * @return parsed value
+     * @throws UnexpectedEOFException
+     */
     private List<String> parseQuoted(Symbol.SymbolType quoted) throws UnexpectedEOFException {
         List<String> toReturn = new LinkedList<>();
 
@@ -472,6 +524,12 @@ public class Parser {
         return toReturn;
     }
 
+    /**
+     * Checks if two given tokens are concatenated.
+     * @param first
+     * @param second
+     * @return true if given tokens are concatenated, otherwise false
+     */
     private boolean areConcatenated(Symbol first, Symbol second) {
         if (first.getPosition().getCharIndex() + first.getValue().length() == second.getPosition().getCharIndex())
             return true;
@@ -479,55 +537,63 @@ public class Parser {
         return false;
     }
 
-    private void skipScript(HtmlTag tag) throws SyntaxErrorException, ClosingTagException {
-        // find </script>
-        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script")) {
-            // skip content
-
-            //System.out.println("Skipping script starting at " + currentSymbol);
-
-
-            while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
-                // keep looking for </script>
-                if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+    /**
+     * Skips tokens until </script> token
+     * @param tag
+     * @throws SyntaxErrorException
+     */
+    private void skipScript(HtmlTag tag) throws SyntaxErrorException {
+        while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
+            // keep looking for </script>
+            if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+                //System.out.println("found " + currentSymbol);
+                TextPosition position = currentSymbol.getPosition();
+                nextSymbol();
+                if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("script")) {
                     //System.out.println("found " + currentSymbol);
-                    TextPosition position = currentSymbol.getPosition();
+                    // </script
+                    // na pewno koniec JSa, teraz trzeba zajac sie do konca tagiem
                     nextSymbol();
-                    if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("script")) {
-                        //System.out.println("found " + currentSymbol);
-                        // </script
-                        // na pewno koniec JSa, teraz trzeba zajac sie do konca tagiem
+                    if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                        // </script> ok
+                        HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, position);
+                        //System.out.println("Skipped to " + endTag.getPosition());
+                        pushStack(endTag);
                         nextSymbol();
-                        if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
-                            // </script> ok
-                            HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, position);
-                            //System.out.println("Skipped to " + endTag.getPosition());
-                            pushStack(endTag);
-                            nextSymbol();
-                        } else {
-                            LinkedList<String> expected = new LinkedList<>();
-                            expected.add(">");
-                            throw new SyntaxErrorException(expected, currentSymbol);
-                        }
-                        break;
                     } else {
-                        nextSymbol();
+                        LinkedList<String> expected = new LinkedList<>();
+                        expected.add(">");
+                        throw new SyntaxErrorException(expected, currentSymbol);
                     }
+                    break;
                 } else {
                     nextSymbol();
                 }
+            } else {
+                nextSymbol();
             }
-
         }
     }
 
+    /**
+     * Pushes given element to the stack of HTML Elements
+     * @param element
+     */
     private void pushStack(HtmlElement element) {
-        //System.out.println(element);
         htmlElements.push(element);
     }
 
+    /**
+     * Prints out stack of HTML Elements
+     */
+    public void printStack() {
+        htmlElements.forEach(System.out::println);
+    }
+
+    /**
+     * Gets next lexical symbol from lexer
+     */
     private void nextSymbol() {
         currentSymbol = lexer.nextSymbol();
-        //System.out.println("PARSER:\tDostalem symbol: " + currentSymbol);
     }
 }
