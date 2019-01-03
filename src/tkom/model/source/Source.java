@@ -10,6 +10,11 @@ public class Source implements ISource {
     private char currentChar;
     private TextPosition textPosition;
 
+    public Source(BufferedReader reader) {
+        fileName = "";
+        this.reader = reader;
+        textPosition = new TextPosition();
+    }
 
     public Source(String fileName) {
         this.fileName = fileName;

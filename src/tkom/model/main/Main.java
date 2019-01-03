@@ -10,7 +10,7 @@ public class Main {
 
         boolean strict = false;
 
-        Source s = new Source("resources/config.html");
+        Source s = new Source("resources/out.html");
         s.open();
         Lexer l = new Lexer(s);
         Parser p = new Parser(l, strict);

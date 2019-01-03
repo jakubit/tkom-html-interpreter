@@ -596,4 +596,8 @@ public class Parser {
     private void nextSymbol() {
         currentSymbol = lexer.nextSymbol();
     }
+
+    public Stack<HtmlElement> getHtmlElements() {
+        return htmlElements;
+    }
 }
