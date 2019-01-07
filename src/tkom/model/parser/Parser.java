@@ -47,9 +47,10 @@ public class Parser {
      * @throws Exception
      */
     private void parseElement() throws Exception {
+        // todo przerzucic do metod parse...
 
             if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
-                // <
+                // <  >  | <   />
                 parseOpeningTag();
             } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
                 // </
@@ -328,6 +329,7 @@ public class Parser {
      * @throws UnexpectedEOFException
      */
     private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, UnexpectedEOFException {
+        // todo przeparsowac attr i dodac do taga
         while (currentSymbol.getType() == Symbol.SymbolType.data) {
             parseAttribute(tag);
             //nextSymbol();
