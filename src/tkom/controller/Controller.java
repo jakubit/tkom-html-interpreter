@@ -1,10 +1,7 @@
 package tkom.controller;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import tkom.model.lexer.Lexer;
 import tkom.model.parser.HtmlElement;
 import tkom.model.parser.Parser;
@@ -26,8 +23,12 @@ public class Controller {
     @FXML
     private TextArea rawWebsite, parsedWebsite;
 
+    @FXML
+    private CheckBox strictCheckbox;
+
     private BufferedReader reader;
     private String rawText;
+    private boolean strictMode;
 
     @FXML
     private void getButtonClicked() {
@@ -65,29 +66,32 @@ public class Controller {
 
     @FXML
     private void parseButtonClicked() {
-        Reader inputString = new StringReader(rawText);
+        Reader inputString = new StringReader(rawWebsite.getText());
         BufferedReader reader = new BufferedReader(inputString);
 
         Source source = new Source(reader);
         Lexer lexer = new Lexer(source);
-        Parser parser = new Parser(lexer, false);
+        Parser parser = new Parser(lexer, strictMode);
 
         try {
-            System.out.println("Parsing...");
+            //System.out.println("Parsing...");
             parser.parse();
             //parser.printStack();
+
             StringBuilder parsed = new StringBuilder();
             for(HtmlElement element : parser.getHtmlElements()) {
                 parsed.append(element);
                 parsed.append("\n");
             }
             parsedWebsite.setText(parsed.toString());
-            //System.out.println(parsed.toString());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            parsedWebsite.setText(e.toString());
         }
+    }
 
-
+    @FXML
+    private void strictCheckboxClicked() {
+        strictMode = strictCheckbox.isSelected();
     }
 }
