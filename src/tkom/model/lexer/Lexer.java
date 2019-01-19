@@ -111,28 +111,22 @@ public class Lexer implements ILexer {
 
     private Symbol openingTags(TextPosition textPosition) {
         // 4 possibilities: <, <!, <!--, </
-        //source.mark();
         source.nextChar();
         if(source.getCurrentChar() == '!') {
-            //source.mark();
             source.nextChar();
             if(source.getCurrentChar() == '-') {
-                //source.mark();
                 source.nextChar();
                 if(source.getCurrentChar() == '-') {
                     Symbol symbol = new Symbol(Symbol.SymbolType.beginComment, "<!--", textPosition);
                     source.nextChar();
                     return symbol;
                 } else {
-                    //source.back();
                     Symbol symbol = new Symbol(Symbol.SymbolType.error, "<!-", textPosition);
                     source.nextChar();
                     return symbol;
                 }
             } else {
-                //source.back();
                 Symbol symbol = new Symbol(Symbol.SymbolType.beginDoctype, "<!", textPosition);
-                //source.nextChar();
                 return symbol;
             }
         }
@@ -143,7 +137,6 @@ public class Lexer implements ILexer {
             return symbol;
         }
 
-        //source.back();
         return new Symbol(Symbol.SymbolType.beginStartTag, "<", textPosition);
     }
 
@@ -175,28 +168,22 @@ public class Lexer implements ILexer {
 
         int length = 0;
         while(length < MAX_LENGTH && Character.isLetterOrDigit(source.getCurrentChar()) || source.getCurrentChar() == '#') {
-            //source.mark();
             value.append(String.valueOf(source.getCurrentChar()));
             source.nextChar();
             length++;
         }
-        //source.back();
         Symbol symbol = new Symbol(Symbol.SymbolType.specialChar, value.toString(), textPosition);
-        //source.nextChar();
         return symbol;
     }
 
     private Symbol slashOrFinishSelfClosingTag(TextPosition textPosition) {
-        //source.mark();
         source.nextChar();
         if(source.getCurrentChar() == '>') {
             Symbol symbol = new Symbol(Symbol.SymbolType.finishSelfClosingTag, "/>", textPosition);
             source.nextChar();
             return symbol;
         } else {
-            //source.back();
             Symbol symbol = new Symbol(Symbol.SymbolType.other, "/", textPosition);
-            //source.nextChar();
             return symbol;
         }
     }
@@ -206,36 +193,27 @@ public class Lexer implements ILexer {
         StringBuilder value = new StringBuilder("");
         int length = 0;
         while (length < MAX_LENGTH && Character.isDigit(source.getCurrentChar())) {
-            //source.mark();
             value.append(String.valueOf(source.getCurrentChar()));
             source.nextChar();
             length++;
         }
-        //source.back();
         return new Symbol(Symbol.SymbolType.numeric, value.toString(), textPosition);
     }
 
     private Symbol dashOrFinishComment(TextPosition textPosition) {
-        // TODO: AUTOMAT DO TEGO
-        //source.mark();
         source.nextChar();
         if(source.getCurrentChar() == '-') {
-            //source.mark();
             source.nextChar();
             if(source.getCurrentChar() == '>') {
                 Symbol symbol = new Symbol(Symbol.SymbolType.finishComment, "-->", textPosition);
                 source.nextChar();
                 return symbol;
             } else {
-                //source.back();
                 Symbol symbol = new Symbol(Symbol.SymbolType.data, "--", textPosition);
-                //source.nextChar();
                 return symbol;
             }
         } else {
-            //source.back();
             Symbol symbol = new Symbol(Symbol.SymbolType.data, "-", textPosition);
-            //source.nextChar();
             return symbol;
         }
     }
@@ -247,15 +225,10 @@ public class Lexer implements ILexer {
         StringBuilder value = new StringBuilder("");
         int length = 0;
         while (length < MAX_LENGTH && !Character.isWhitespace(source.getCurrentChar()) && characterAllowedInName(source.getCurrentChar())) {
-            //source.mark();
-
-
-                value.append(String.valueOf(source.getCurrentChar()));
-                source.nextChar();
-                length++;
-
+            value.append(String.valueOf(source.getCurrentChar()));
+            source.nextChar();
+            length++;
         }
-        //source.back();
         return new Symbol(Symbol.SymbolType.data, value.toString(), textPosition);
     }
 

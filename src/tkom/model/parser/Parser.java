@@ -64,7 +64,6 @@ public class Parser {
             } else {
                 parseText();
             }
-
     }
 
     /**
