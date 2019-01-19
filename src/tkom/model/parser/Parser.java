@@ -4,6 +4,7 @@ import tkom.model.lexer.Lexer;
 import tkom.model.lexer.Symbol;
 import tkom.model.source.TextPosition;
 
+import javax.swing.text.html.HTML;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
@@ -544,22 +545,21 @@ public class Parser {
      * @throws SyntaxErrorException
      */
     private void skipScript(HtmlTag tag) throws SyntaxErrorException {
+        StringBuilder scriptBody = new StringBuilder();
+        TextPosition scriptPosition = currentSymbol.getPosition();
         while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
             // keep looking for </script>
             if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
-                //System.out.println("found " + currentSymbol);
                 TextPosition position = currentSymbol.getPosition();
                 nextSymbol();
                 if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("script")) {
-                    //System.out.println("found " + currentSymbol);
                     // </script
                     // na pewno koniec JSa, teraz trzeba zajac sie do konca tagiem
                     nextSymbol();
                     if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
                         // </script> ok
-                        HtmlTag endTag = new HtmlTag("script", HtmlTag.TagType.closing, position);
-                        //System.out.println("Skipped to " + endTag.getPosition());
-                        pushStack(endTag);
+                        pushStack(new HtmlElement(HtmlElement.ElementType.scriptBody, scriptBody.toString(), scriptPosition));
+                        pushStack(new HtmlTag("script", HtmlTag.TagType.closing, position));
                         nextSymbol();
                     } else {
                         LinkedList<String> expected = new LinkedList<>();
@@ -568,9 +568,11 @@ public class Parser {
                     }
                     break;
                 } else {
+                    scriptBody.append(currentSymbol.getValue());
                     nextSymbol();
                 }
             } else {
+                scriptBody.append(currentSymbol.getValue());
                 nextSymbol();
             }
         }
