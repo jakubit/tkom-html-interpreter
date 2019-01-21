@@ -12,7 +12,7 @@ import java.util.Stack;
 public class Parser {
     private Symbol currentSymbol;
     private Lexer lexer;
-    private Stack<HtmlElement> htmlElements;
+    private List<HtmlElement> htmlElements;
     private boolean strict;
 
     /* TODO: KNOWN BUGS:
@@ -23,7 +23,15 @@ public class Parser {
     public Parser(Lexer lexer, boolean strict) {
         this.lexer = lexer;
         this.strict = strict;
-        htmlElements = new Stack<>();
+        htmlElements = new LinkedList<>();
+    }
+
+    public void reset() {
+        htmlElements.clear();
+    }
+
+    public void setStrict (boolean strict) {
+        this.strict = strict;
     }
 
     /**
@@ -320,6 +328,10 @@ public class Parser {
         // If <script> then skip content
         if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("script"))
             skipScript(tag);
+
+        // If <style> then skip content
+        if (tag.getTagType() == HtmlTag.TagType.opening && tag.getName().toLowerCase().equals("style"))
+            skipStyle(tag);
     }
 
     /**
@@ -578,12 +590,46 @@ public class Parser {
         }
     }
 
+    private void skipStyle(HtmlTag tag) throws SyntaxErrorException {
+        StringBuilder styleBody = new StringBuilder();
+        TextPosition stylePosition = currentSymbol.getPosition();
+        while (currentSymbol.getType() != Symbol.SymbolType.EOF) {
+            // keep looking for </style>
+            if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+                TextPosition position = currentSymbol.getPosition();
+                nextSymbol();
+                if (currentSymbol.getType() == Symbol.SymbolType.data && currentSymbol.getValue().toLowerCase().equals("style")) {
+                    // </style
+                    // na pewno koniec stylu, teraz trzeba zajac sie do konca tagiem
+                    nextSymbol();
+                    if (currentSymbol.getType() == Symbol.SymbolType.finishTag) {
+                        // </style> ok
+                        pushStack(new HtmlElement(HtmlElement.ElementType.styleBody, styleBody.toString(), stylePosition));
+                        pushStack(new HtmlTag("style", HtmlTag.TagType.closing, position));
+                        nextSymbol();
+                    } else {
+                        LinkedList<String> expected = new LinkedList<>();
+                        expected.add(">");
+                        throw new SyntaxErrorException(expected, currentSymbol);
+                    }
+                    break;
+                } else {
+                    styleBody.append(currentSymbol.getValue());
+                    nextSymbol();
+                }
+            } else {
+                styleBody.append(currentSymbol.getValue());
+                nextSymbol();
+            }
+        }
+    }
+
     /**
      * Pushes given element to the stack of HTML Elements
      * @param element
      */
     private void pushStack(HtmlElement element) {
-        htmlElements.push(element);
+        htmlElements.add(element);
     }
 
     /**
@@ -600,7 +646,7 @@ public class Parser {
         currentSymbol = lexer.nextSymbol();
     }
 
-    public Stack<HtmlElement> getHtmlElements() {
+    public List<HtmlElement> getHtmlElements() {
         return htmlElements;
     }
 }

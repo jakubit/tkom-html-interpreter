@@ -15,6 +15,11 @@ public class Lexer implements ILexer {
         source.nextChar();
     }
 
+    public void setSource(Source source) {
+        this.source = source;
+        source.nextChar();
+    }
+
     public Symbol nextSymbol() {
         /*
         * TODO

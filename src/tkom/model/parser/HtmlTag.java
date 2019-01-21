@@ -27,6 +27,14 @@ public class HtmlTag extends HtmlElement {
         closed = false;
     }
 
+    public HtmlTag(HtmlTag other) {
+        super(ElementType.tag, other.getPosition());
+        attributes = new LinkedList<>(other.getAttributes());
+        name = other.getName();
+        type = other.getTagType();
+        closed = other.isClosed();
+    }
+
     public HtmlTag(String name, TagType type, TextPosition position) {
         super(ElementType.tag, position);
         attributes = new LinkedList<>();
@@ -52,6 +60,8 @@ public class HtmlTag extends HtmlElement {
 
         attribute.addValue(value);
     }
+
+    public List<Attribute> getAttributes() {return attributes;}
 
     public String getName() {
         return name;

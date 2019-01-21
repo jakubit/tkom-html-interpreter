@@ -8,7 +8,8 @@ public class HtmlElement {
         text,
         comment,
         doctype,
-        scriptBody
+        scriptBody,
+        styleBody
     }
 
     private final ElementType type;
@@ -49,7 +50,7 @@ public class HtmlElement {
                 return "<!-->";
             else
                 return "<!--" + content + "-->";
-        } else if (type == ElementType.text || type == ElementType.scriptBody) {
+        } else if (type == ElementType.text || type == ElementType.scriptBody || type == ElementType.styleBody) {
             return content;
         } else if (type == ElementType.doctype) {
             return "<!" + content + ">";
