@@ -5,7 +5,7 @@ import tkom.model.source.TextPosition;
 public class Symbol {
 
     public enum SymbolType {
-        attrributeAssing,       // =
+        attributiveAssign,       // =
         beginStartTag,          // <
         beginEndTag,            // </
         beginComment,           // <!--

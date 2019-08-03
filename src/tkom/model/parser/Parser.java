@@ -4,10 +4,8 @@ import tkom.model.lexer.Lexer;
 import tkom.model.lexer.Symbol;
 import tkom.model.source.TextPosition;
 
-import javax.swing.text.html.HTML;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 
 public class Parser {
     private Symbol currentSymbol;
@@ -15,10 +13,6 @@ public class Parser {
     private List<HtmlElement> htmlElements;
     private boolean strict;
 
-    /* TODO: KNOWN BUGS:
-     */
-
-    // todo: sprawdzic jak sie zachowa gdy trafi na unexpected EOF w kazdym przypadku parsowania
 
     public Parser(Lexer lexer, boolean strict) {
         this.lexer = lexer;
@@ -56,23 +50,22 @@ public class Parser {
      * @throws Exception
      */
     private void parseElement() throws Exception {
-        // todo przerzucic do metod parse...
 
-            if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
-                // <  >  | <   />
-                parseOpeningTag();
-            } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
-                // </
-                parseClosingTag();
-            } else if (currentSymbol.getType() == Symbol.SymbolType.beginComment) {
-                // <!--
-                parseComment();
-            } else  if (currentSymbol.getType() == Symbol.SymbolType.beginDoctype) {
-                // <!
-                parseDoctype();
-            } else {
-                parseText();
-            }
+        if(currentSymbol.getType() == Symbol.SymbolType.beginStartTag) {
+            // <  >  | <   />
+            parseOpeningTag();
+        } else if (currentSymbol.getType() == Symbol.SymbolType.beginEndTag) {
+            // </
+            parseClosingTag();
+        } else if (currentSymbol.getType() == Symbol.SymbolType.beginComment) {
+            // <!--
+            parseComment();
+        } else  if (currentSymbol.getType() == Symbol.SymbolType.beginDoctype) {
+            // <!
+            parseDoctype();
+        } else {
+            parseText();
+        }
     }
 
     /**
@@ -341,10 +334,8 @@ public class Parser {
      * @throws UnexpectedEOFException
      */
     private void parseAttributes(HtmlTag tag) throws SyntaxErrorException, UnexpectedEOFException {
-        // todo przeparsowac attr i dodac do taga
         while (currentSymbol.getType() == Symbol.SymbolType.data) {
             parseAttribute(tag);
-            //nextSymbol();
         }
     }
 
@@ -361,7 +352,7 @@ public class Parser {
         String attrName = parseName();
 
         //nextSymbol();
-        if (currentSymbol.getType() == Symbol.SymbolType.attrributeAssing) {
+        if (currentSymbol.getType() == Symbol.SymbolType.attributiveAssign) {
             // <tagName attrName=
             nextSymbol();
             if (currentSymbol.getType() == Symbol.SymbolType.data || currentSymbol.getType() == Symbol.SymbolType.numeric) {
@@ -480,7 +471,7 @@ public class Parser {
         Symbol lastSymbol = currentSymbol;
         nextSymbol();
         while (areConcatenated(lastSymbol, currentSymbol)
-                && currentSymbol.getType() != Symbol.SymbolType.attrributeAssing
+                && currentSymbol.getType() != Symbol.SymbolType.attributiveAssign
                 && currentSymbol.getType() != Symbol.SymbolType.finishSelfClosingTag
                 && currentSymbol.getType() != Symbol.SymbolType.finishTag
                 && currentSymbol.getType() != Symbol.SymbolType.EOF) {

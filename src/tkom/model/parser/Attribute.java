@@ -26,14 +26,6 @@ public class Attribute {
 
         if (type != AttributeType.unquoted || values.size() == 0)
             values.add(value);
-
-        /*// todo popraw to na jakis ldany customowy exception, ale to nie jest chyba blad
-        if (type == AttributeType.unquoted && values.size() > 0) {
-            System.out.println("ERROR: In Attribute.addValue!");
-            //throw new Exception("Attribute error! You can't use multiple unquoted values as attribute value!");
-        } else {
-            values.add(value);
-        }*/
     }
 
     public String getName() {

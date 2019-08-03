@@ -18,9 +18,6 @@ public class HtmlTag extends HtmlElement {
     private List<Attribute> attributes;
     private boolean closed;
 
-
-    // todo zrobic teleskopowy konstruktor
-
     public HtmlTag(TextPosition position) {
         super(ElementType.tag, position);
         attributes = new LinkedList<>();

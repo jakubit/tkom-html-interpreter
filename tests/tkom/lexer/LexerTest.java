@@ -7,7 +7,6 @@ import tkom.model.lexer.Symbol;
 import tkom.model.source.Source;
 
 class LexerTest {
-    // todo: popraeic te testy
 
     @Test
     void nextSymbol() {
@@ -68,7 +67,7 @@ class LexerTest {
         Assert.assertEquals(Symbol.SymbolType.data, symbol.getType());
 
         symbol = lexer.nextSymbol();
-        Assert.assertEquals(Symbol.SymbolType.attrributeAssing, symbol.getType());
+        Assert.assertEquals(Symbol.SymbolType.attributiveAssign, symbol.getType());
 
         symbol = lexer.nextSymbol();
         Assert.assertEquals(Symbol.SymbolType.singleQuote, symbol.getType());
